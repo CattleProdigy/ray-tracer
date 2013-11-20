@@ -2,105 +2,105 @@
 #include "color.hpp"
 
 // ctors
-color::color() {
+Color::Color() {
     rgb = Eigen::Vector3f(0, 0, 0);
 }
 
-color::color(float red, float green, float blue) {
+Color::Color(float red, float green, float blue) {
     rgb[0] = red;
     rgb[1] = green;
     rgb[2] = blue;
 }
 
-color::color(const color& other) {
+Color::Color(const Color& other) {
     rgb = other.rgb;
 }
 
-color::color(const Eigen::Vector3f& rgb) {
+Color::Color(const Eigen::Vector3f& rgb) {
     this->rgb = rgb;
 }
 
 // Binary Arithmetic Operators
-color operator+(const color& col_l, const color& col_r) {
-    return color(col_l.rgb + col_r.rgb);
+Color operator+(const Color& col_l, const Color& col_r) {
+    return Color(col_l.rgb + col_r.rgb);
 }
 
-color operator*(const color& col_l, const color& col_r) {
-    return color(col_l.rgb.cwiseProduct(col_r.rgb));
+Color operator*(const Color& col_l, const Color& col_r) {
+    return Color(col_l.rgb.cwiseProduct(col_r.rgb));
 }
 
-color operator/(const color& col_l, const color& col_r) {
-    return color(col_l.rgb.cwiseQuotient(col_r.rgb));
+Color operator/(const Color& col_l, const Color& col_r) {
+    return Color(col_l.rgb.cwiseQuotient(col_r.rgb));
 }
 
-color operator*(const color& col_l, float scalar) {
-    return color(col_l.rgb * scalar);
+Color operator*(const Color& col_l, float scalar) {
+    return Color(col_l.rgb * scalar);
 }
 
-color operator*(float scalar, const color& col_r) {
-    return color(col_r.rgb * scalar);
+Color operator*(float scalar, const Color& col_r) {
+    return Color(col_r.rgb * scalar);
 }
 
-color operator/(const color& col_l, float scalar) {
-    return color(col_l.rgb / scalar);
+Color operator/(const Color& col_l, float scalar) {
+    return Color(col_l.rgb / scalar);
 }
 
 // Uniary Arithmetic
-color color::operator+() const {
+Color Color::operator+() const {
     return *this;
 }
 
-color color::operator-() const {
-    return color(-rgb);
+Color Color::operator-() const {
+    return Color(-rgb);
 }
 
 // Compound Assignment Arithmetic
-color& color::operator=(const color& rhs) {
+Color& Color::operator=(const Color& rhs) {
     rgb = rhs.rgb;
     return *this;
 }
 
-color& color::operator+=(const color& rhs) {
+Color& Color::operator+=(const Color& rhs) {
     rgb += rhs.rgb;
     return *this;
 }
 
-color& color::operator-=(const color& rhs) {
+Color& Color::operator-=(const Color& rhs) {
     rgb -= rhs.rgb;
     return *this;
 }
 
-color& color::operator*=(const color& rhs) {
+Color& Color::operator*=(const Color& rhs) {
     rgb = rgb.cwiseProduct(rhs.rgb);
     return *this;
 }
 
-color& color::operator/=(const color& rhs) {
+Color& Color::operator/=(const Color& rhs) {
     rgb = rgb.cwiseQuotient(rhs.rgb);
     return *this;
 }
 
 // Print
-std::ostream& operator<<(std::ostream& os, const color& col) {
+std::ostream& operator<<(std::ostream& os, const Color& col) {
     os << "(R" << col.rgb[0] << 
           ",G" << col.rgb[1] <<
           ",B" << col.rgb[2] << std::endl;
     return os;
 }
 
-float color::r() const {
+float Color::r() const {
     return rgb[0];
 }
 
-float color::g() const {
+float Color::g() const {
     return rgb[1];
 }
 
-float color::b() const {
+float Color::b() const {
     return rgb[2];
 }
 
-Eigen::Vector3i color::to_pixel() const {
+Eigen::Vector3i Color::to_pixel() const {
     Eigen::Vector3i rgb_pixel;
     for (int i = 0; i < 3; i++) {
         if (rgb[i] > 1.0)

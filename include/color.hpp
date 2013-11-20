@@ -1,37 +1,40 @@
+#ifndef COLOR_HPP
+#define COLOR_HPP
+
 #include <cstdio>
 #include <iostream>
 #include <Eigen/Core>
 
-class color {
+class Color {
 
     public:
-        color();
-        ~color() {};
-        color(float red, float green, float blue);
-        color(const Eigen::Vector3f& rgb);
-        color(const color& other);
+        Color();
+        ~Color() {};
+        Color(float red, float green, float blue);
+        Color(const Eigen::Vector3f& rgb);
+        Color(const Color& other);
 
         // Binary Arithmetic Operators
-        friend color operator+(const color& col_l, const color& col_r);
-        friend color operator*(const color& col_l, const color& col_r);
-        friend color operator/(const color& col_l, const color& col_r);
-        friend color operator*(const color& col_l, float scalar);
-        friend color operator*(float scalar, const color& col_r);
-        friend color operator/(const color& col_l, float scalar);
+        friend Color operator+(const Color& col_l, const Color& col_r);
+        friend Color operator*(const Color& col_l, const Color& col_r);
+        friend Color operator/(const Color& col_l, const Color& col_r);
+        friend Color operator*(const Color& col_l, float scalar);
+        friend Color operator*(float scalar, const Color& col_r);
+        friend Color operator/(const Color& col_l, float scalar);
 
         // Uniary Arithmetic
-        color operator+() const;
-        color operator-() const;
+        Color operator+() const;
+        Color operator-() const;
 
         // Compound Assignment Arithmetic
-        color& operator=(const color& rhs);
-        color& operator+=(const color& rhs);
-        color& operator-=(const color& rhs);
-        color& operator*=(const color& rhs);
-        color& operator/=(const color& rhs);
+        Color& operator=(const Color& rhs);
+        Color& operator+=(const Color& rhs);
+        Color& operator-=(const Color& rhs);
+        Color& operator*=(const Color& rhs);
+        Color& operator/=(const Color& rhs);
 
         // Print
-        friend std::ostream& operator<<(std::ostream& os, const color& col);
+        friend std::ostream& operator<<(std::ostream& os, const Color& col);
         
         float r() const;
         float g() const;
@@ -40,3 +43,5 @@ class color {
 
         Eigen::Vector3f rgb;
 };
+
+#endif
