@@ -17,13 +17,17 @@ TEST_OBJS	= $(TESTS:$(TEST_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 # Compiler
 CXX 		= g++
 CPPFLAGS	= -isystem $(GTEST_DIR)/include
-CXXFLAGS 	= -Wextra -Wall -pthread $(INCLUDES) `libpng-config --cflags`
+CXXFLAGS 	= --std=c++11 -Wextra -Wall -pthread $(INCLUDES) `libpng-config --cflags`
 LIBFLAGS 	= `libpng-config --ldflags`
 
 # Google Test
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
+
+.PHONY: clean all
+
+all: $(OBJS)
 
 $(OBJ_DIR)/gtest-all.o : $(GTEST_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
@@ -46,6 +50,9 @@ $(OBJS): $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
 image_test: $(OBJS)
 	$(CXX) $(OBJS) $(LIBFLAGS) -o image_test
 
+ray: $(OBJS)
+	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBFLAGS) -o ray 
+
 $(TEST_OBJS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp \
 				$(GTEST_HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@ 
@@ -60,8 +67,6 @@ debug:
 	echo $(AR)
 	echo $(ARFLAGS)
 	echo $(SRCS)
-
-.PHONY: clean
 
 clean:
 	rm -rf *.o
