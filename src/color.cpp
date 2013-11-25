@@ -84,7 +84,7 @@ Color& Color::operator/=(const Color& rhs) {
 std::ostream& operator<<(std::ostream& os, const Color& col) {
     os << "(R" << col.rgb[0] << 
           ",G" << col.rgb[1] <<
-          ",B" << col.rgb[2] << std::endl;
+          ",B" << col.rgb[2] << ')' << std::endl;
     return os;
 }
 
