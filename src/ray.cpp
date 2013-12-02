@@ -11,7 +11,7 @@ Ray::Ray(const Ray& r) {
 }
 
 // Value Constructor
-Ray::Ray(Eigen::Vector3f offset, Eigen::Vector3f slope) {
+Ray::Ray(V3 offset, V3 slope) {
     this->o = offset;
     this->s = slope;
 }
@@ -21,6 +21,10 @@ Ray& Ray::operator=(const Ray& r) {
     this->o = r.o;
     this->s = r.s;
     return *this;
+}
+
+V3 Ray::at(float t) const {
+    return o + t*s;
 }
 
 // Print

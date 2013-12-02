@@ -5,10 +5,11 @@ OBJ_DIR		= ./obj
 SRC_DIR		= ./src
 TEST_DIR	= ./test
 GTEST_DIR	= ./gtest
+LIB_DIR		= ./lib
 
 # Build Objects
 SRCS		= $(wildcard $(SRC_DIR)/*.cpp)
-INCLUDES 	= -I./include -I/usr/include/eigen3 -I./gtest/include
+INCLUDES 	= -I./include -I/usr/include/eigen3 -I./gtest/include -I/usr/include/assimp
 TESTS 		= $(wildcard $(TEST_DIR)/*.cpp)
 
 OBJS		= $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
@@ -17,8 +18,8 @@ TEST_OBJS	= $(TESTS:$(TEST_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 # Compiler
 CXX 		= g++
 CPPFLAGS	= -isystem $(GTEST_DIR)/include
-CXXFLAGS 	= --std=c++11 -Wextra -Wall -pthread $(INCLUDES) `libpng-config --cflags`
-LIBFLAGS 	= `libpng-config --ldflags`
+CXXFLAGS 	= --std=c++11 -O3 -Wextra -Wall -pthread $(INCLUDES) $(LIBFLAGS) `libpng-config --cflags`
+LIBFLAGS 	= -lassimp `libpng-config --ldflags`
 
 # Google Test
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
@@ -51,7 +52,11 @@ image_test: $(OBJS)
 	$(CXX) $(OBJS) $(LIBFLAGS) -o image_test
 
 ray: $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBFLAGS) -o ray 
+	$(CXX) $(CXXFLAGS) $(OBJS) -o ray 
+
+debug: CXXFLAGS += -g 
+debug: ray
+	
 
 $(TEST_OBJS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp \
 				$(GTEST_HEADERS)
@@ -60,13 +65,6 @@ $(TEST_OBJS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp \
 test: obj/color.o obj/sphere.o obj/ray.o $(TEST_OBJS) ./obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o rt_test 
 	./rt_test
-
-debug:
-	echo $(TEST_OBJS)
-	echo $(OBJS)
-	echo $(AR)
-	echo $(ARFLAGS)
-	echo $(SRCS)
 
 clean:
 	rm -rf *.o

@@ -3,15 +3,21 @@
 
 #include <cstdio>
 #include <iostream>
+
 #include <Eigen/Core>
+#include <png++/png.hpp>
+
+using V3 = Eigen::Vector3f;
+using V3i = Eigen::Vector3i;
 
 class Color {
 
     public:
+        // ctors
         Color();
         ~Color() {};
         Color(float red, float green, float blue);
-        Color(const Eigen::Vector3f& rgb);
+        Color(const V3& rgb);
         Color(const Color& other);
 
         // Binary Arithmetic Operators
@@ -36,12 +42,14 @@ class Color {
         // Print
         friend std::ostream& operator<<(std::ostream& os, const Color& col);
         
+        // Accessors
         float r() const;
         float g() const;
         float b() const;
-        Eigen::Vector3i to_pixel() const;
+        V3i to_pixel() const;
+        png::rgb_pixel to_png_pixel() const;
 
-        Eigen::Vector3f rgb;
+        V3 rgb;
 };
 
 #endif

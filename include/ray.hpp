@@ -4,6 +4,7 @@
 #include <iostream>
 #include <Eigen/Core>
 
+using V3 = Eigen::Vector3f;
 
 class Ray {
 
@@ -12,7 +13,7 @@ class Ray {
         // ctors
         Ray() {};
         Ray(const Ray& r);
-        Ray(Eigen::Vector3f offset, Eigen::Vector3f slope);
+        Ray(V3 offset,V3 slope);
 
         // dtor
         ~Ray() {};
@@ -22,9 +23,12 @@ class Ray {
 
         // Print
         friend std::ostream& operator<<(std::ostream& os, const Ray& r);
+
+        // Evaluate
+        V3 at(float t) const;
          
-        Eigen::Vector3f o; // Offset
-        Eigen::Vector3f s; // Slope
+        V3 o; // Offset
+        V3 s; // Slope
 };
 
 #endif

@@ -3,7 +3,7 @@
 
 // ctors
 Color::Color() {
-    rgb = Eigen::Vector3f(0, 0, 0);
+    rgb = V3(0, 0, 0);
 }
 
 Color::Color(float red, float green, float blue) {
@@ -16,7 +16,7 @@ Color::Color(const Color& other) {
     rgb = other.rgb;
 }
 
-Color::Color(const Eigen::Vector3f& rgb) {
+Color::Color(const V3& rgb) {
     this->rgb = rgb;
 }
 
@@ -100,8 +100,8 @@ float Color::b() const {
     return rgb[2];
 }
 
-Eigen::Vector3i Color::to_pixel() const {
-    Eigen::Vector3i rgb_pixel;
+V3i Color::to_pixel() const {
+    V3i rgb_pixel;
     for (int i = 0; i < 3; i++) {
         if (rgb[i] > 1.0)
             rgb_pixel[i] = 255;
@@ -113,3 +113,12 @@ Eigen::Vector3i Color::to_pixel() const {
     return rgb_pixel;
 }
 
+png::rgb_pixel Color::to_png_pixel() const {
+    V3i int_pixel = to_pixel();
+    png::rgb_pixel rgb;
+    rgb.red = int_pixel[0];
+    rgb.green = int_pixel[1];
+    rgb.blue = int_pixel[2];
+    
+    return rgb;
+}
