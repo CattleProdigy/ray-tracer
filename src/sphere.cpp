@@ -4,6 +4,7 @@
 
 #include <png++/png.hpp>
 #include "ray.hpp"
+#include "ray_tracer.hpp"
 #include "sphere.hpp"
 
 Sphere::Sphere(float r, const V3& c, const Color& color, bool is_light) {
@@ -28,18 +29,19 @@ Sphere& Sphere::operator=(const Sphere& s) {
     return *this;
 }
 
-bool Sphere::hit(const Ray& ray, float t_min, float t_max, Ray_Hit& rh) const {
+bool Sphere::hit(Ray ray, const Ray_Tracer* rt, 
+                        float t_min, float t_max, Ray_Hit& rh) const {
 
     // Create a ray in object space (as if sphere is at origin)
     Ray obj_ray;
     obj_ray.s = ray.s;
-    obj_ray.o = (ray.o - this->c);
+    obj_ray.o = ray.o - this->c;
 
     // An intersection happens if (O + tD)(O + tD) = r*r has real solns
 
     // Check determinant (non-negative => real solution(s) => intersection) 
     float a = obj_ray.s.dot(obj_ray.s);
-    float b = 2 * obj_ray.s.dot(obj_ray.o);
+    float b = 2.0 * obj_ray.s.dot(obj_ray.o);
     float c2 = obj_ray.o.dot(obj_ray.o) - r * r;
 
     float det = b * b - 4.0 * a * c2;
@@ -51,19 +53,74 @@ bool Sphere::hit(const Ray& ray, float t_min, float t_max, Ray_Hit& rh) const {
     // Finish solving quadratic equation
     det = sqrt(det);
 
-    float t;
-    t = -(-b - det) / (2.0 * a);
-    if (t < t_min)
-        t = -(-b + det) / (2.0 * a);    
+    float q;
+    if (b > 0)
+        q = -0.5 * (b + det);
+    else 
+        q = -0.5 * (b - det);
+
+    float t = q / a;
+    float t1 = c2 / q; 
+    if (t > t1) {
+        float temp = t;
+        t = t1;
+        t1 = temp;
+    }
 
     if (t < t_min || t > t_max) {
         return false;
     }
-
+    
+    // Ambient
     rh.t = t;
     rh.col = col;
     rh.normal = c - ray.at(t);
     rh.normal.normalize();
+    rh.shape = this;
+
+    if (ray.depth >= rt->depth_limit)
+        return true;
+
+    if (is_light) {     
+        rh.col = Color(1.0, 1.0, 1.0);
+        return true;
+    }
+
+    rh.col = 0.1*col;
+
+    // Store location of ray-sphere intersection
+    V3 int_loc = ray.at(t); 
+
+    // Shadow
+    float shade;
+    for (Shape* light : rt->lights) {
+        shade = 1.0f;
+
+        // BIG ASSUMPTION THAT ALL LIGHTS ARE SPHERES
+        Sphere* sph = static_cast<Sphere*>(light);
+
+        // Make ray from intersection to light
+        V3 int_to_light = int_loc - sph->c; 
+        float dist_to_light = int_to_light.norm();
+        int_to_light.normalize();
+        Ray shadow_ray(int_loc + 0.1f*int_to_light, int_to_light, ray.depth + 1);
+        Ray_Hit shadow_hit;
+        if (rt->trace(shadow_ray, 0.00001f, dist_to_light, shadow_hit)) {
+            if (!shadow_hit.shape->is_light) {
+                shade = 0.0;
+        //        std::cout << "occlusion" << std::endl;
+                continue;
+            }
+        }
+
+        float inner = int_to_light.dot(rh.normal);
+        //std::cout << inner << std::endl;
+        if (inner > 0.0) {
+            rh.col += sph->col *inner* 0.9 * shade * col;
+        }
+    }
+
+    
 
     return true;
 

@@ -32,15 +32,23 @@ int main (int argc, char ** argv) {
     Mesh m;
     m.load(filename);
 
-    Camera cam(V3(0,1.41,1.41), V3(0,-1.41,-1.41), V3(0,1,0), 2.0, -2, -2, 2, 2); 
-    Sphere s(.7, V3(0,0,0), Color(0,0,1), false);    
-    Sphere luminare(.02, V3(-1.4,-1.9,0), Color(1.0, 1.0, 1.0), true);    
+    Camera cam(V3(0,2,2), V3(0,-1,-1).normalized(), V3(0,1,0), 2.0, -2, -2, 2, 2); 
+    Sphere s(0.7, V3(0,0,0), Color(0.4, 0.4, 0.7), false);    
+    Sphere luminare(.02, V3(0.7,0.9,0), Color(0.4, 0.4, 0.4), true);    
+    //Sphere luminare2(.02, V3(0.9,-0.9,0), Color(0.4, 0.4, 0.4), true);    
 
-    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3);
-    rt.shapes.push_back(&s);
-    rt.shapes.push_back(&m);
-    rt.shapes.push_back(&luminare);
+    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 2, 4);
+    rt.add_shape(&s);
+    rt.add_shape(&m);
+    rt.add_shape(&luminare);
+    //rt.add_shape(&luminare2);
 
+/*
+    Ray r(V3(0,2,2), V3(0,-1,-1).normalized(), 1);
+    Ray_Hit rh;
+    rt.trace(r, 0.000001, 999999999, rh);
+    std::cout << rh.t << std::endl;
+*/
     rt.trace_all();
     rt.write_buffer("ray_image2.png");
 

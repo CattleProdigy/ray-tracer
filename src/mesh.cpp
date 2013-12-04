@@ -52,23 +52,24 @@ void Mesh::load(std::string filename) {
         tris[i].normal = v1.cross(v2);
         tris[i].normal.normalize();
 
-        tris[i].col = Color(0, 0, 1.0); // Blue
+        tris[i].col = Color(0.4, 0.8, 0.1); // Blue
         
     }
 }
 
-bool Mesh::hit(const Ray&r, float t_min, float t_max, Ray_Hit& rh) const {
+bool Mesh::hit(Ray ray, const Ray_Tracer* rt, 
+               float t_min, float t_max, Ray_Hit& rh) const {
 
     bool hit = false;
 
     for (const Triangle& i : tris) {
-        if (i.hit(r, t_min, t_max, rh)) {
+        if (i.hit(ray, rt, t_min, t_max, rh)) {
             hit = true;
-            t_min = rh.t;
+            t_max = rh.t;
         }
     }
 
-    rh.col = (0.1 + r.s.dot(rh.normal))*rh.col; 
+    rh.col = rh.col; 
 
     return hit;
 }

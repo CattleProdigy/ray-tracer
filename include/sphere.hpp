@@ -9,6 +9,10 @@
 #include "ray_hit.hpp"
 #include "shape.hpp"
 
+
+// Forward Declaration
+class Ray_Tracer;
+
 using V3 = Eigen::Vector3f;
 
 class Sphere : public Shape {
@@ -19,7 +23,8 @@ class Sphere : public Shape {
         Sphere(float r, const V3& c, const Color& color, bool is_light);
         Sphere(const Sphere& s);
         Sphere& operator=(const Sphere& s);
-        virtual bool hit(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const; 
+        virtual bool hit(Ray ray, const Ray_Tracer* rt, 
+                         float t_min, float t_max, Ray_Hit& rh) const;
 
         V3 c;
         float r; 

@@ -41,7 +41,7 @@ Camera::Camera(V3 eye, V3 gaze, V3 up, float s, float u0, float v0, float u1, fl
 }
 
 Ray Camera::make_ray(float a, float b) {
-    V3 dir = eye - (vp_corner + a*vp_up + b*vp_across); 
+    V3 dir = (vp_corner + a*vp_up + b*vp_across) - eye; 
     dir.normalize();
-    return Ray(eye, dir);
+    return Ray(eye, dir, 1);
 }

@@ -62,7 +62,7 @@ $(TEST_OBJS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp \
 				$(GTEST_HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
-test: obj/color.o obj/sphere.o obj/ray.o $(TEST_OBJS) ./obj/gtest_main.a
+test: obj/color.o obj/sphere.o obj/ray.o obj/ray_tracer.o obj/camera.o $(TEST_OBJS) ./obj/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o rt_test 
 	./rt_test
 

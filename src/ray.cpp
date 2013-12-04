@@ -8,18 +8,21 @@
 Ray::Ray(const Ray& r) {
     this->o = r.o;
     this->s = r.s;
+    this->depth = r.depth;
 }
 
 // Value Constructor
-Ray::Ray(V3 offset, V3 slope) {
+Ray::Ray(V3 offset, V3 slope, unsigned int depth) {
     this->o = offset;
     this->s = slope;
+    this->depth = depth;
 }
 
 // Assignment Operator
 Ray& Ray::operator=(const Ray& r) {
     this->o = r.o;
     this->s = r.s;
+    this->depth = r.depth;
     return *this;
 }
 

@@ -14,7 +14,7 @@ using V2 = Eigen::Vector2f;
 static void gen_rand_samples(int bins_per_side, std::vector<V2>& points);
 
 Ray_Tracer::Ray_Tracer(const Camera& cam, unsigned int x_res, unsigned int y_res,
-                                    Color background_col, unsigned int sample_bins) {
+              Color background_col, unsigned int sample_bins, unsigned int depth_limit) {
     this->cam = cam;
     this->x_res = x_res;
     this->y_res = y_res;
@@ -24,6 +24,30 @@ Ray_Tracer::Ray_Tracer(const Camera& cam, unsigned int x_res, unsigned int y_res
 
     this->background_col = background_col;
     this->sample_bins = sample_bins;
+    this->depth_limit = depth_limit;
+}
+
+Ray_Tracer& Ray_Tracer::operator=(const Ray_Tracer& rt) {
+
+    this->cam = rt.cam;
+    this->x_res = rt.x_res;
+    this->y_res = rt.y_res;
+    image_buf.resize(x_res);
+    for (std::vector<Color>& y_buf: image_buf)
+        y_buf.resize(y_res);
+
+    this->background_col = rt.background_col;
+    this->sample_bins = rt.sample_bins;
+    this->depth_limit = rt.depth_limit;
+
+    return *this;
+
+}
+
+void Ray_Tracer::add_shape(Shape* shape) {
+    shapes.push_back(shape);
+    if (shape->is_light) 
+        lights.push_back(shape);
 }
 
 void Ray_Tracer::free_shapes() {
@@ -31,22 +55,22 @@ void Ray_Tracer::free_shapes() {
         delete shape;
 }
 
-Color Ray_Tracer::trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh) {
-    Color col = background_col;
+bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const {
+    bool hit_once = false;
     for (Shape* shape : shapes) {
-        const float BIG_FLOAT = std::numeric_limits<float>::max();
-        if (shape->hit(r, t_min, BIG_FLOAT, rh)) {
-            t_min = rh.t;            
-            col = rh.col;
+        if (shape->hit(r, this, t_min, t_max, rh)) {
+            t_max = rh.t;            
+            hit_once = true;
         }
     }
-    return col;
+    return hit_once;
 }
 
 void Ray_Tracer::trace_all() {
 
     std::vector<V2> points;
     for (unsigned int i = 0; i < x_res; ++i) {
+        std::cout << i << std::endl;
         for (unsigned int j = 0; j < x_res; ++j) {
             points.clear();
             gen_rand_samples(sample_bins, points);
@@ -55,9 +79,10 @@ void Ray_Tracer::trace_all() {
             for (V2& k : points) {
                 Ray r = cam.make_ray((i + k.x() + 0.5)/x_res, (j + k.y() + 0.5)/y_res);
                 Ray_Hit rh;
-                total += trace(r, 0.00001f, 9999999, rh);
+                const float BIG_FLOAT = std::numeric_limits<float>::max();
+                if (trace(r, 0.00001f, BIG_FLOAT, rh))
+                    total += rh.col;
             }
-   
             image_buf[i][j] = total / points.size();
         }
     }

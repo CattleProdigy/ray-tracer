@@ -3,9 +3,11 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <mesh.hpp>
-#include <ray.hpp>
-#include <triangle.hpp>
+#include "mesh.hpp"
+#include "ray.hpp"
+#include "ray_tracer.hpp"
+#include "triangle.hpp"
+#include "sphere.hpp"
 
 Triangle::Triangle(const Triangle& other) {
     inds = other.inds;
@@ -28,7 +30,8 @@ Triangle& Triangle::operator=(const Triangle& other) {
 
 // Moeller-Trumbore
 #define EPSILON 0.00001
-bool Triangle::hit(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const {
+bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
+                    float t_min, float t_max, Ray_Hit& rh) const {
 
     // Absolute Triangle Vertex Positions
     V3& v0 = m->verts[inds[0]].pos;
@@ -40,13 +43,13 @@ bool Triangle::hit(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const {
     e0 = v1 - v0;
     e1 = v2 - v0; 
 
-    V3 p = r.s.cross(e1);
+    V3 p = ray.s.cross(e1);
     float deter = e0.dot(p);
 
     if (deter  > -EPSILON && deter < EPSILON)
         return false; 
 
-    V3 t = r.o - v0;
+    V3 t = ray.o - v0;
     
     // Store the inverse to reduce divisions
     float inv_deter = 1.0 / deter;
@@ -56,19 +59,60 @@ bool Triangle::hit(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const {
         return false;
 
     V3 q = t.cross(e0);
-    float v = r.s.dot(q) * inv_deter;
+    float v = ray.s.dot(q) * inv_deter;
 
     if (v < 0.0 || u + v > 1.0)
         return false;
 
-    float t_inter = -1*e1.dot(q) * inv_deter;
+    float t_inter = e1.dot(q) * inv_deter;
 
-    if (t_inter > EPSILON) {
-        rh.t = t_inter;
-        rh.col = col;
-        rh.normal = normal;
+    if (t_inter < t_min || t_inter > t_max)
+        return false;
+
+    rh.t = t_inter;
+    rh.col = 0.1*col;
+    rh.normal = normal;
+    rh.shape = m;
+
+    if (ray.depth >= rt->depth_limit)
+        return true;
+
+/*
+    if (is_light) {     
+        rh.col = Color(1.0, 1.0, 1.0);
         return true;
     }
-   
-    return false;
+*/
+
+    V3 int_loc = ray.at(t_inter);
+    // Shadow
+    float shade;
+    for (Shape* light : rt->lights) {
+        shade = 1.0f;
+
+        // BIG ASSUMPTION THAT ALL LIGHTS ARE SPHERES
+        Sphere* sph = static_cast<Sphere*>(light);
+
+        // Make ray from intersection to light
+        V3 int_to_light = sph->c - int_loc; 
+        float dist_to_light = int_to_light.norm();
+        int_to_light.normalize();
+        Ray shadow_ray(int_loc + 0.000001f*int_to_light, int_to_light, ray.depth + 1);
+        Ray_Hit shadow_hit;
+        if (rt->trace(shadow_ray, 0.000001f, dist_to_light, shadow_hit)) {
+            if (!shadow_hit.shape->is_light) {
+                shade = 0.0;
+                //std::cout << "occlusion" << std::endl;
+                continue;
+            }
+        }
+
+        float inner = int_to_light.dot(rh.normal);
+        //std::cout << inner << std::endl;
+        if (inner > 0.0) {
+            rh.col += sph->col *inner* 0.9 * shade * col;
+        }
+    }
+
+    return true;  
 }

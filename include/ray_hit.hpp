@@ -2,14 +2,18 @@
 #define RAY_HIT_HPP
 
 #include <Eigen/Core>
-#include <color.hpp>
+#include "color.hpp"
 
 using V3 = Eigen::Vector3f;
+
+// forward declaration
+class Shape;
 
 struct Ray_Hit {
     float t;
     V3 normal;
     Color col;
+    const Shape* shape;
 };
 
 #endif
