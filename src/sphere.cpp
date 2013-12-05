@@ -7,30 +7,30 @@
 #include "ray_tracer.hpp"
 #include "sphere.hpp"
 
-Sphere::Sphere(float r, const V3& c, const Color& color, bool is_light) {
+Sphere::Sphere(float r, const V3& c, const Material& mat, bool is_light) {
     this->r = r;
     this->c = c;
-    this->col = color;
+    this->mat = mat;
     this->is_light = is_light;
 }
 
 Sphere::Sphere(const Sphere& s) {
     this->r = s.r;
     this->c = s.c;
-    this->col = s.col;
+    this->mat = s.mat;
     this->is_light = s.is_light;
 }
 
 Sphere& Sphere::operator=(const Sphere& s) {
     this->r = s.r;
     this->c = s.c; 
-    this->col = s.col;
+    this->mat = s.mat;
     this->is_light = s.is_light;
     return *this;
 }
 
 bool Sphere::hit(Ray ray, const Ray_Tracer* rt, 
-                        float t_min, float t_max, Ray_Hit& rh) const {
+                        float t_min, float t_max, Ray_Hit& rh, bool shadow) const {
 
     // Create a ray in object space (as if sphere is at origin)
     Ray obj_ray;
@@ -73,7 +73,7 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
     
     // Ambient
     rh.t = t;
-    rh.col = col;
+    rh.col = 0.1*mat.col;
     rh.normal = c - ray.at(t);
     rh.normal.normalize();
     rh.shape = this;
@@ -86,7 +86,9 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         return true;
     }
 
-    rh.col = 0.1*col;
+    if (shadow)
+        return true;
+
 
     // Store location of ray-sphere intersection
     V3 int_loc = ray.at(t); 
@@ -105,7 +107,7 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         int_to_light.normalize();
         Ray shadow_ray(int_loc + 0.1f*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
-        if (rt->trace(shadow_ray, 0.00001f, dist_to_light, shadow_hit)) {
+        if (rt->trace(shadow_ray, 0.00001f, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
                 shade = 0.0;
         //        std::cout << "occlusion" << std::endl;
@@ -116,7 +118,7 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         float inner = int_to_light.dot(rh.normal);
         //std::cout << inner << std::endl;
         if (inner > 0.0) {
-            rh.col += sph->col *inner* 0.5 * shade * col;
+            rh.col += sph->mat.col * inner * mat.diff * shade * mat.col;
         }
     }
 
@@ -124,12 +126,11 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
     V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
     Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
-    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit)) {
-        rh.col += 0.7*refl_hit.col * refl_hit.shape->col;
+    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit, false)) {
+        rh.col += mat.refl * refl_hit.col * refl_hit.shape->mat.col;
     }
-
-    
 
     return true;
 
 }
+

@@ -55,12 +55,22 @@ void Ray_Tracer::free_shapes() {
         delete shape;
 }
 
-bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const {
+bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max, 
+                        Ray_Hit& rh, bool shadow) const {
     bool hit_once = false;
-    for (Shape* shape : shapes) {
-        if (shape->hit(r, this, t_min, t_max, rh)) {
-            t_max = rh.t;            
-            hit_once = true;
+    if (shadow) {
+        for (Shape* shape : shapes) {
+            if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
+                t_max = rh.t;            
+                return true;
+            }
+        }
+    } else {
+        for (Shape* shape : shapes) {
+            if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
+                t_max = rh.t;            
+                hit_once = true;
+            }
         }
     }
     return hit_once;
@@ -80,7 +90,7 @@ void Ray_Tracer::trace_all() {
                 Ray r = cam.make_ray((i + k.x() + 0.5)/x_res, (j + k.y() + 0.5)/y_res);
                 Ray_Hit rh;
                 const float BIG_FLOAT = std::numeric_limits<float>::max();
-                if (trace(r, 0.00001f, BIG_FLOAT, rh))
+                if (trace(r, 0.00001f, BIG_FLOAT, rh, false))
                     total += rh.col;
             }
             image_buf[i][j] = total / points.size();

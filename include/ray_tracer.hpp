@@ -22,7 +22,7 @@ class Ray_Tracer {
 
         void add_shape(Shape* shape);
         void free_shapes();
-        bool trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh) const;
+        bool trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
         void trace_all();
         void write_buffer(std::string filename);
 

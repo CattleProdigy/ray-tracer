@@ -10,6 +10,7 @@
 #include <assimp/aiScene.h>
 #include <assimp/aiPostProcess.h>
 
+#include "material.hpp"
 #include "mesh.hpp"
 #include "ray.hpp"
 #include "ray_tracer.hpp"
@@ -32,14 +33,16 @@ int main (int argc, char ** argv) {
     Mesh m;
     m.load(filename);
 
+    Material sm(Color(0.4, 0.4, 0.7),0.4, 1.0);
+    Material lm(Color(0.6, 0.6, 0.6),1.0, 0.0);
     Camera cam(V3(0,2,2), V3(0,-1,-1).normalized(), V3(0,1,0), 2.0, -2, -2, 2, 2); 
-    Sphere s(0.5, V3(.3,-.3,0), Color(0.4, 0.4, 0.7), false);    
-    Sphere s2(0.3, V3(-.6,.8,0), Color(0.8, 0.4, 0.3), false);    
-    Sphere luminare(.02, V3(0.7,0.9,0), Color(0.6, 0.6, 0.6), true);    
-    Sphere luminare2(.02, V3(-0.7,-0.9,0), Color(0.4, 0.4, 0.4), true);    
+    Sphere s(0.7, V3(0,0,0), sm, false);    
+    Sphere s2(0.3, V3(-.6,.8,0), sm, false);    
+    Sphere luminare(.02, V3(0.7,0.9,0), lm, true);    
+    Sphere luminare2(.02, V3(-0.7,-0.9,0), lm, true);    
 
     Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3, 3);
-    //rt.add_shape(&s);
+    rt.add_shape(&s);
     rt.add_shape(&s2);
     rt.add_shape(&m);
     rt.add_shape(&luminare);

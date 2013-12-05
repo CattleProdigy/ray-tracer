@@ -13,12 +13,14 @@ INCLUDES 	= -I./include -I/usr/include/eigen3 -I./gtest/include -I/usr/include/a
 TESTS 		= $(wildcard $(TEST_DIR)/*.cpp)
 
 OBJS		= $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+NONMAINOBJS = $(filter-out ./obj/main.o,$(OBJS))
+
 TEST_OBJS	= $(TESTS:$(TEST_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # Compiler
 CXX 		= g++
 CPPFLAGS	= -isystem $(GTEST_DIR)/include
-CXXFLAGS 	= --std=c++11 -O3 -Wextra -Wall -pthread $(INCLUDES) $(LIBFLAGS) `libpng-config --cflags`
+CXXFLAGS 	= --std=c++11 -O3 -march=core2 -Wextra -Wall -pthread $(INCLUDES) $(LIBFLAGS) `libpng-config --cflags`
 LIBFLAGS 	= -lassimp `libpng-config --ldflags`
 
 # Google Test
@@ -56,13 +58,14 @@ ray: $(OBJS)
 
 debug: CXXFLAGS += -g 
 debug: ray
-	
+
 
 $(TEST_OBJS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp \
 				$(GTEST_HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
-test: obj/color.o obj/sphere.o obj/ray.o obj/ray_tracer.o obj/camera.o $(TEST_OBJS) ./obj/gtest_main.a
+test: $(NONMAINOBJS) $(TEST_OBJS) ./obj/gtest_main.a
+	echo $(NONMAINOBJS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o rt_test 
 	./rt_test
 

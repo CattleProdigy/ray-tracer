@@ -29,7 +29,7 @@ class Ray {
 
         V3 o; // Offset
         V3 s; // Slope
-        unsigned int depth;
+        short depth;
 };
 
 #endif

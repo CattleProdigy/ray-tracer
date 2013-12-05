@@ -51,25 +51,28 @@ void Mesh::load(std::string filename) {
         const V3& v2 = verts[tris[i].inds[2]].pos - verts[tris[i].inds[0]].pos;
         tris[i].normal = v1.cross(v2);
         tris[i].normal.normalize();
-
-        tris[i].col = Color(0.4, 0.8, 0.1); // Blue
-        
     }
+
+    mat = Material(Color(0.2, 0.8, 0.2), 0.3, 0.7);
 }
 
 bool Mesh::hit(Ray ray, const Ray_Tracer* rt, 
-               float t_min, float t_max, Ray_Hit& rh) const {
+               float t_min, float t_max, Ray_Hit& rh, bool shadow) const {
 
     bool hit = false;
-
-    for (const Triangle& i : tris) {
-        if (i.hit(ray, rt, t_min, t_max, rh)) {
-            hit = true;
-            t_max = rh.t;
+    if (shadow) {
+        for (const Triangle& i : tris) {
+            if (i.hit(ray, rt, t_min, t_max, rh)) {
+                return true;
+            }
+        }
+    } else { 
+        for (const Triangle& i : tris) {
+            if (i.hit(ray, rt, t_min, t_max, rh)) {
+                hit = true;
+                t_max = rh.t;
+            }
         }
     }
-
-    rh.col = rh.col; 
-
     return hit;
 }

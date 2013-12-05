@@ -16,7 +16,7 @@ struct Vertex {
     Vertex(const V3& _pos) 
       : pos(_pos) {}
     V3 pos;     // Position
-    V3 normal;  // Vertex normal 
+    //V3 normal;  // Vertex normal 
 };
 
 class Mesh : public Shape {
@@ -25,7 +25,7 @@ class Mesh : public Shape {
         ~Mesh() {};
         void load(std::string filename);
         virtual bool hit(Ray ray, const Ray_Tracer* rt, 
-                         float t_min, float t_max, Ray_Hit& rh) const;
+                         float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
 
         std::vector<Vertex> verts;
         std::vector<Triangle> tris;

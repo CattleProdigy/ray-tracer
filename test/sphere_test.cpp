@@ -1,12 +1,14 @@
 #include <Eigen/Core>
 #include "gtest/gtest.h"
-#include "sphere.hpp"
+
+#include "camera.hpp"
 #include "color.hpp"
+#include "material.hpp"
 #include "ray.hpp"
 #include "ray_hit.hpp"
-#include "shape.hpp"
 #include "ray_tracer.hpp"
-#include "camera.hpp"
+#include "shape.hpp"
+#include "sphere.hpp"
 
 using V3 = Eigen::Vector3f;
 
@@ -25,11 +27,11 @@ class sphere_test : public testing::Test {
 
 TEST_F(sphere_test, intersection_1) {
     // Unit Sphere
-    Color col(0,0,0);
-    Sphere unit(1.0, Eigen::Vector3f(0,0,0), col, false); 
+    Material m(Color(0,0,0), 0 ,0);
+    Sphere unit(1.0, Eigen::Vector3f(0,0,0),m, false); 
     Ray r(Eigen::Vector3f(0,0,-5), Eigen::Vector3f(0,0,1), 0);
     Ray_Hit rh;
-    EXPECT_TRUE(unit.hit(r, &rt, 0.0, 99999.0, rh));
+    EXPECT_TRUE(unit.hit(r, &rt, 0.0, 99999.0, rh, false));
     EXPECT_FLOAT_EQ(0.0, rh.normal[0]);
     EXPECT_FLOAT_EQ(0.0, rh.normal[1]);
     EXPECT_FLOAT_EQ(1.0, rh.normal[2]);
@@ -38,27 +40,27 @@ TEST_F(sphere_test, intersection_1) {
 
 TEST_F(sphere_test, miss_intersection_1) {
     // Unit Sphere
-    Color col(0,0,0);
-    Sphere unit(1.0, Eigen::Vector3f(0,0,0), col, false); 
+    Material m(Color(0,0,0), 0 ,0);
+    Sphere unit(1.0, Eigen::Vector3f(0,0,0),m, false); 
     Ray r2(Eigen::Vector3f(0,0,-5), Eigen::Vector3f(1,0,0), 10);
     Ray_Hit rh;
-    EXPECT_FALSE(unit.hit(r2,&rt, 0.0, 99999.0, rh));
+    EXPECT_FALSE(unit.hit(r2,&rt, 0.0, 99999.0, rh, false));
 }
 
 TEST_F(sphere_test, intersection_2) {
     // Unit Sphere
-    Color col(0,0,0);
-    Sphere unit(1.0, Eigen::Vector3f(85.00,-20.30,90.0), col, false); 
+    Material m(Color(0,0,0), 0 ,0);
+    Sphere unit(1.0, Eigen::Vector3f(85.00,-20.30,90.0),m, false); 
     Ray r(Eigen::Vector3f(80.00,-20.23,90.0), Eigen::Vector3f(1,0,0), 10);
     Ray_Hit rh;
-    EXPECT_TRUE(unit.hit(r,&rt, 0.0, 99999.0, rh));
+    EXPECT_TRUE(unit.hit(r,&rt, 0.0, 99999.0, rh, false));
 }
 
 TEST_F(sphere_test, miss_intersection_2) {
     // Unit Sphere
-    Color col(0,0,0);
-    Sphere unit(1.0, Eigen::Vector3f(85.00,-20.30,90.0), col, false); 
+    Material m(Color(0,0,0), 0 ,0);
+    Sphere unit(1.0, Eigen::Vector3f(85.00,-20.30,90.0),m, false); 
     Ray r(Eigen::Vector3f(80.00,-20.30,90.0), Eigen::Vector3f(0,0.40,0), 10);
     Ray_Hit rh;
-    EXPECT_FALSE(unit.hit(r,&rt, 0.0, 99999.0, rh));
+    EXPECT_FALSE(unit.hit(r,&rt, 0.0, 99999.0, rh, false));
 }

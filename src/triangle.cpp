@@ -12,19 +12,16 @@
 Triangle::Triangle(const Triangle& other) {
     inds = other.inds;
     normal = other.normal;
-    col = other.col;
 }
 
-Triangle::Triangle(Mesh* m, const V3i& inds, Color col) {
+Triangle::Triangle(Mesh* m, const V3i& inds) {
     this->m = m;
     this->inds = inds;
-    this->col = col;
 }
 
 Triangle& Triangle::operator=(const Triangle& other) {
     this->inds = other.inds;
     this->normal = other.normal;
-    this->col = other.col;
     return (*this);
 }
 
@@ -70,7 +67,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         return false;
 
     rh.t = t_inter;
-    rh.col = 0.1*col;
+    rh.col = 0.1*m->mat.col;
     rh.normal = normal;
     rh.shape = m;
 
@@ -99,7 +96,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         int_to_light.normalize();
         Ray shadow_ray(int_loc + 0.00001f*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
-        if (rt->trace(shadow_ray, 0.000001f, dist_to_light, shadow_hit)) {
+        if (rt->trace(shadow_ray, 0.000001f, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
                 shade = 0.0;
                 //std::cout << "occlusion" << std::endl;
@@ -110,7 +107,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         float inner = int_to_light.dot(rh.normal);
         //std::cout << inner << std::endl;
         if (inner > 0.0) {
-            rh.col += sph->col *inner* 0.9 * shade * col;
+            rh.col += sph->mat.col *inner* 0.9 * shade * m->mat.col;
         }
     }
 
@@ -118,8 +115,8 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
     V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
     Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
-    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit)) {
-        rh.col += 0.7*refl_hit.col * refl_hit.shape->col;
+    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit, false)) {
+        rh.col += 0.7*refl_hit.col * refl_hit.shape->mat.col;
     }
 
     return true;  
