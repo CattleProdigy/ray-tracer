@@ -14,6 +14,7 @@ class Shape {
                          float t_min, float t_max, Ray_Hit& rh) const = 0;
 
         bool is_light;
+        Color col;
 };
 
 #endif

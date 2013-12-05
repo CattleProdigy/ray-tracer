@@ -97,7 +97,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         V3 int_to_light = sph->c - int_loc; 
         float dist_to_light = int_to_light.norm();
         int_to_light.normalize();
-        Ray shadow_ray(int_loc + 0.000001f*int_to_light, int_to_light, ray.depth + 1);
+        Ray shadow_ray(int_loc + 0.00001f*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
         if (rt->trace(shadow_ray, 0.000001f, dist_to_light, shadow_hit)) {
             if (!shadow_hit.shape->is_light) {
@@ -112,6 +112,14 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         if (inner > 0.0) {
             rh.col += sph->col *inner* 0.9 * shade * col;
         }
+    }
+
+    // Reflection 
+    V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
+    Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
+    Ray_Hit refl_hit;
+    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit)) {
+        rh.col += 0.7*refl_hit.col * refl_hit.shape->col;
     }
 
     return true;  

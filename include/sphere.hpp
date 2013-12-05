@@ -28,7 +28,6 @@ class Sphere : public Shape {
 
         V3 c;
         float r; 
-        Color col;
 };
 
 #endif

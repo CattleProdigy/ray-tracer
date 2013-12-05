@@ -116,8 +116,16 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         float inner = int_to_light.dot(rh.normal);
         //std::cout << inner << std::endl;
         if (inner > 0.0) {
-            rh.col += sph->col *inner* 0.9 * shade * col;
+            rh.col += sph->col *inner* 0.5 * shade * col;
         }
+    }
+
+    // Reflection 
+    V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
+    Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
+    Ray_Hit refl_hit;
+    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit)) {
+        rh.col += 0.7*refl_hit.col * refl_hit.shape->col;
     }
 
     
