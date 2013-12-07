@@ -25,9 +25,9 @@ void Mesh::load(std::string filename) {
     // Copy Vertices
     verts.resize(mesh->mNumVertices);
     for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
-        verts[i].pos[0] = mesh->mVertices[i][0];
-        verts[i].pos[1] = mesh->mVertices[i][1];
-        verts[i].pos[2] = mesh->mVertices[i][2];
+        verts[i][0] = mesh->mVertices[i][0];
+        verts[i][1] = mesh->mVertices[i][1];
+        verts[i][2] = mesh->mVertices[i][2];
     }
 
     // Faces
@@ -47,8 +47,8 @@ void Mesh::load(std::string filename) {
         tris[i].inds[2] = face.mIndices[2];
 
         // Calculate triangle's normal vector
-        const V3& v1 = verts[tris[i].inds[1]].pos - verts[tris[i].inds[0]].pos;
-        const V3& v2 = verts[tris[i].inds[2]].pos - verts[tris[i].inds[0]].pos;
+        const V3& v1 = verts[tris[i].inds[1]] - verts[tris[i].inds[0]];
+        const V3& v2 = verts[tris[i].inds[2]] - verts[tris[i].inds[0]];
         tris[i].normal = v1.cross(v2);
         tris[i].normal.normalize();
     }
@@ -62,13 +62,13 @@ bool Mesh::hit(Ray ray, const Ray_Tracer* rt,
     bool hit = false;
     if (shadow) {
         for (const Triangle& i : tris) {
-            if (i.hit(ray, rt, t_min, t_max, rh)) {
+            if (i.hit(ray, rt, t_min, t_max, rh, true)) {
                 return true;
             }
         }
     } else { 
         for (const Triangle& i : tris) {
-            if (i.hit(ray, rt, t_min, t_max, rh)) {
+            if (i.hit(ray, rt, t_min, t_max, rh, false)) {
                 hit = true;
                 t_max = rh.t;
             }

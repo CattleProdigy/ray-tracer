@@ -74,11 +74,9 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
     // Ambient
     rh.t = t;
     rh.col = 0.1*mat.col;
-    rh.normal = c - ray.at(t);
-    rh.normal.normalize();
     rh.shape = this;
 
-    if (ray.depth >= rt->depth_limit)
+    if (shadow || ray.depth >= rt->depth_limit)
         return true;
 
     if (is_light) {     
@@ -86,9 +84,8 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         return true;
     }
 
-    if (shadow)
-        return true;
-
+    rh.normal = c - ray.at(t);
+    rh.normal.normalize();
 
     // Store location of ray-sphere intersection
     V3 int_loc = ray.at(t); 

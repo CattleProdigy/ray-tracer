@@ -30,7 +30,7 @@ class Ray_Tracer {
         unsigned int x_res, y_res;
         Color background_col;
         unsigned int sample_bins;
-        unsigned int depth_limit;
+        unsigned short depth_limit;
         std::vector<Shape *> shapes;
         std::vector<Shape *> lights;
         std::vector<std::vector<Color> > image_buf;

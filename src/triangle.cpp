@@ -10,17 +10,24 @@
 #include "sphere.hpp"
 
 Triangle::Triangle(const Triangle& other) {
-    inds = other.inds;
+    //inds = other.inds;
+    this->inds[0] = other.inds[0];
+    this->inds[1] = other.inds[1];
+    this->inds[2] = other.inds[2];
     normal = other.normal;
 }
 
+/*
 Triangle::Triangle(Mesh* m, const V3i& inds) {
     this->m = m;
     this->inds = inds;
 }
+*/
 
 Triangle& Triangle::operator=(const Triangle& other) {
-    this->inds = other.inds;
+    this->inds[0] = other.inds[0];
+    this->inds[1] = other.inds[1];
+    this->inds[2] = other.inds[2];
     this->normal = other.normal;
     return (*this);
 }
@@ -28,12 +35,12 @@ Triangle& Triangle::operator=(const Triangle& other) {
 // Moeller-Trumbore
 #define EPSILON 0.00001
 bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
-                    float t_min, float t_max, Ray_Hit& rh) const {
+                    float t_min, float t_max, Ray_Hit& rh, bool shadow) const {
 
     // Absolute Triangle Vertex Positions
-    V3& v0 = m->verts[inds[0]].pos;
-    V3& v1 = m->verts[inds[1]].pos;
-    V3& v2 = m->verts[inds[2]].pos;
+    V3& v0 = m->verts[inds[0]];
+    V3& v1 = m->verts[inds[1]];
+    V3& v2 = m->verts[inds[2]];
 
     // Two edges of triangle
     V3 e0, e1;
@@ -71,7 +78,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
     rh.normal = normal;
     rh.shape = m;
 
-    if (ray.depth >= rt->depth_limit)
+    if (shadow || ray.depth >= rt->depth_limit)
         return true;
 
 /*

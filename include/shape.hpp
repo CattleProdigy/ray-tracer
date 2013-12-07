@@ -16,7 +16,6 @@ class Shape {
 
         bool is_light;
         Material mat;
-        
 };
 
 #endif

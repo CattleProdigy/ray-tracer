@@ -20,13 +20,13 @@ class Triangle {
         Triangle() {};
         ~Triangle() {};
         Triangle(const Triangle& other);
-        Triangle(Mesh* m, const V3i& inds);
+        //Triangle(Mesh* m, const V3i& inds);
         Triangle& operator=(const Triangle& other);
         bool hit(const Ray& r, const Ray_Tracer* rt, 
-                    float t_min, float t_max, Ray_Hit& rh) const;
+                    float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
 
+        unsigned short inds[3];
         Mesh *m; 
-        V3i inds;
         V3 normal;
 };
 

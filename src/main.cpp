@@ -48,12 +48,6 @@ int main (int argc, char ** argv) {
     rt.add_shape(&luminare);
     rt.add_shape(&luminare2);
 
-/*
-    Ray r(V3(0,2,2), V3(0,-1,-1).normalized(), 1);
-    Ray_Hit rh;
-    rt.trace(r, 0.000001, 999999999, rh);
-    std::cout << rh.t << std::endl;
-*/
     rt.trace_all();
     rt.write_buffer("ray_image2.png");
 
