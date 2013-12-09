@@ -14,6 +14,7 @@ Triangle::Triangle(const Triangle& other) {
     this->inds[0] = other.inds[0];
     this->inds[1] = other.inds[1];
     this->inds[2] = other.inds[2];
+    this->m = other.m;
     normal = other.normal;
 }
 
@@ -29,6 +30,7 @@ Triangle& Triangle::operator=(const Triangle& other) {
     this->inds[1] = other.inds[1];
     this->inds[2] = other.inds[2];
     this->normal = other.normal;
+    this->m = other.m;
     return (*this);
 }
 
@@ -90,9 +92,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
 
     V3 int_loc = ray.at(t_inter);
     // Shadow
-    float shade;
     for (Shape* light : rt->lights) {
-        shade = 1.0f;
 
         // BIG ASSUMPTION THAT ALL LIGHTS ARE SPHERES
         Sphere* sph = static_cast<Sphere*>(light);
@@ -105,16 +105,13 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         Ray_Hit shadow_hit;
         if (rt->trace(shadow_ray, 0.000001f, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
-                shade = 0.0;
-                //std::cout << "occlusion" << std::endl;
                 continue;
             }
         }
 
         float inner = int_to_light.dot(rh.normal);
-        //std::cout << inner << std::endl;
         if (inner > 0.0) {
-            rh.col += sph->mat.col *inner* 0.9 * shade * m->mat.col;
+            rh.col += sph->mat.col *inner* m->mat.diff * m->mat.col;
         }
     }
 
@@ -123,7 +120,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
     Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
     if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit, false)) {
-        rh.col += 0.7*refl_hit.col * refl_hit.shape->mat.col;
+        rh.col += m->mat.refl*refl_hit.col * refl_hit.shape->mat.col;
     }
 
     return true;  

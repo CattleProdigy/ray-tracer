@@ -58,19 +58,12 @@ void Ray_Tracer::free_shapes() {
 bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max, 
                         Ray_Hit& rh, bool shadow) const {
     bool hit_once = false;
-    if (shadow) {
-        for (Shape* shape : shapes) {
-            if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
-                t_max = rh.t;            
+    for (Shape* shape : shapes) {
+        if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
+            t_max = rh.t;            
+            hit_once = true;
+            if (shadow)
                 return true;
-            }
-        }
-    } else {
-        for (Shape* shape : shapes) {
-            if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
-                t_max = rh.t;            
-                hit_once = true;
-            }
         }
     }
     return hit_once;

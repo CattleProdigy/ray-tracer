@@ -33,17 +33,15 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
                         float t_min, float t_max, Ray_Hit& rh, bool shadow) const {
 
     // Create a ray in object space (as if sphere is at origin)
-    Ray obj_ray;
-    obj_ray.s = ray.s;
-    obj_ray.o = ray.o - this->c;
+    V3 s = ray.s;
+    V3 o = ray.o - this->c;
 
     // An intersection happens if (O + tD)(O + tD) = r*r has real solns
 
     // Check determinant (non-negative => real solution(s) => intersection) 
-    float a = obj_ray.s.dot(obj_ray.s);
-    float b = 2.0 * obj_ray.s.dot(obj_ray.o);
-    float c2 = obj_ray.o.dot(obj_ray.o) - r * r;
-
+    float a = s.dot(s);
+    float b = 2.0 * s.dot(o);
+    float c2 = o.dot(o) - r * r;
     float det = b * b - 4.0 * a * c2;
 
     // No real solutions
@@ -67,13 +65,10 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         t1 = temp;
     }
 
-    if (t < t_min || t > t_max) {
+    if (t < t_min || t > t_max) 
         return false;
-    }
     
     // Ambient
-    rh.t = t;
-    rh.col = 0.1*mat.col;
     rh.shape = this;
 
     if (shadow || ray.depth >= rt->depth_limit)
@@ -84,6 +79,8 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         return true;
     }
 
+    rh.t = t;
+    rh.col = 0.1*mat.col;
     rh.normal = c - ray.at(t);
     rh.normal.normalize();
 
@@ -91,9 +88,7 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
     V3 int_loc = ray.at(t); 
 
     // Shadow
-    float shade;
     for (Shape* light : rt->lights) {
-        shade = 1.0f;
 
         // BIG ASSUMPTION THAT ALL LIGHTS ARE SPHERES
         Sphere* sph = static_cast<Sphere*>(light);
@@ -106,16 +101,13 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         Ray_Hit shadow_hit;
         if (rt->trace(shadow_ray, 0.00001f, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
-                shade = 0.0;
-        //        std::cout << "occlusion" << std::endl;
                 continue;
             }
         }
 
         float inner = int_to_light.dot(rh.normal);
-        //std::cout << inner << std::endl;
         if (inner > 0.0) {
-            rh.col += sph->mat.col * inner * mat.diff * shade * mat.col;
+            rh.col += sph->mat.col * inner * mat.diff * mat.col;
         }
     }
 

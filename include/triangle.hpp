@@ -14,6 +14,9 @@ using V3i = Eigen::Vector3i;
 class Mesh;
 class Ray_Tracer;
 
+#undef AI_CONFIG_PP_SLM_VERTEX_LIMIT
+#define AI_CONFIG_PP_SLM_VERTEX_LIMIT 65535
+
 class Triangle {
 
     public:
@@ -25,9 +28,9 @@ class Triangle {
         bool hit(const Ray& r, const Ray_Tracer* rt, 
                     float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
 
-        unsigned short inds[3];
         Mesh *m; 
         V3 normal;
+        unsigned short inds[3];
 };
 
 #endif

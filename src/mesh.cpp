@@ -18,7 +18,7 @@ void Mesh::load(std::string filename) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(filename, 
                                       aiProcess_Triangulate | 
-                                      aiProcessPreset_TargetRealtime_Fast);
+                                      aiProcessPreset_TargetRealtime_MaxQuality);
 
     struct aiMesh * mesh = scene->mMeshes[0];
 
@@ -53,12 +53,11 @@ void Mesh::load(std::string filename) {
         tris[i].normal.normalize();
     }
 
-    mat = Material(Color(0.2, 0.8, 0.2), 0.3, 0.7);
+    mat = Material(Color(0.2, 0.8, 0.2), 0.7, 0.9);
 }
 
 bool Mesh::hit(Ray ray, const Ray_Tracer* rt, 
                float t_min, float t_max, Ray_Hit& rh, bool shadow) const {
-
     bool hit = false;
     if (shadow) {
         for (const Triangle& i : tris) {

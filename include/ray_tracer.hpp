@@ -2,6 +2,7 @@
 #define RAY_TRACER_HPP
 
 #include <vector>
+#include <stack>
 #include <string>
 
 #include "camera.hpp"
@@ -31,6 +32,7 @@ class Ray_Tracer {
         Color background_col;
         unsigned int sample_bins;
         unsigned short depth_limit;
+        std::stack<Ray> rays;
         std::vector<Shape *> shapes;
         std::vector<Shape *> lights;
         std::vector<std::vector<Color> > image_buf;

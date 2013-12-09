@@ -13,7 +13,7 @@ class Ray {
         // ctors
         Ray() {};
         Ray(const Ray& r);
-        Ray(V3 offset,V3 slope, unsigned int depth);
+        Ray(V3 offset,V3 slope, unsigned short depth);
 
         // dtor
         ~Ray() {};

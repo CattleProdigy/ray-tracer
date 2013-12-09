@@ -5,6 +5,7 @@
 #include "ray.hpp"
 #include "ray_hit.hpp"
 
+
 class Ray_Tracer;
 
 class Shape {
