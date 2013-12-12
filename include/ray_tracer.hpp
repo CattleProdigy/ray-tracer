@@ -7,6 +7,7 @@
 
 #include "camera.hpp"
 #include "color.hpp"
+#include "kd_tree.hpp"
 #include "ray.hpp"
 #include "shape.hpp"
 
@@ -36,6 +37,7 @@ class Ray_Tracer {
         std::vector<Shape *> shapes;
         std::vector<Shape *> lights;
         std::vector<std::vector<Color> > image_buf;
+        Kd_tree* kd;
 };
 
 #endif

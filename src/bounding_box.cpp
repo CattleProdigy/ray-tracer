@@ -6,6 +6,11 @@
 #include "mesh.hpp"
 #include "triangle.hpp"
 
+Bounding_box::Bounding_box() {
+    min = V3(FLT_MAX, FLT_MAX, FLT_MAX);
+    max = V3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+}
+
 Bounding_box::Bounding_box(const std::vector<Triangle>& tris) {
 
     min = V3(FLT_MAX, FLT_MAX, FLT_MAX);

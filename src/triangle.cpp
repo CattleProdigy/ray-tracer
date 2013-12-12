@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cfloat>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -8,6 +9,8 @@
 #include "ray_tracer.hpp"
 #include "triangle.hpp"
 #include "sphere.hpp"
+
+#define EPSILON 0.00001
 
 Triangle::Triangle(const Triangle& other) {
     //inds = other.inds;
@@ -35,7 +38,6 @@ Triangle& Triangle::operator=(const Triangle& other) {
 }
 
 // Moeller-Trumbore
-#define EPSILON 0.00001
 bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
                     float t_min, float t_max, Ray_Hit& rh, bool shadow) const {
 
@@ -72,13 +74,16 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
 
     float t_inter = e1.dot(q) * inv_deter;
 
-    if (t_inter < t_min || t_inter > t_max)
+    if (t_inter < t_min || t_inter > t_max) {
+        //std::cout << "Cull: " << t_inter << '\t' <<t_min<< '\t' <<t_max<<  std::endl;
         return false;
+    }
 
     rh.t = t_inter;
-    rh.col = 0.1*m->mat.col;
+    rh.col = 0.3*m->mat.col;
     rh.normal = normal;
     rh.shape = m;
+
 
     if (shadow || ray.depth >= rt->depth_limit)
         return true;
@@ -101,9 +106,9 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         V3 int_to_light = sph->c - int_loc; 
         float dist_to_light = int_to_light.norm();
         int_to_light.normalize();
-        Ray shadow_ray(int_loc + 0.00001f*int_to_light, int_to_light, ray.depth + 1);
+        Ray shadow_ray(int_loc + EPSILON*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
-        if (rt->trace(shadow_ray, 0.000001f, dist_to_light, shadow_hit, true)) {
+        if (rt->trace(shadow_ray, EPSILON, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
                 continue;
             }
@@ -117,9 +122,9 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
 
     // Reflection 
     V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
-    Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
+    Ray refl_ray(int_loc + EPSILON*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
-    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit, false)) {
+    if (rt->trace(refl_ray, EPSILON, FLT_MAX, refl_hit, false)) {
         rh.col += m->mat.refl*refl_hit.col * refl_hit.shape->mat.col;
     }
 

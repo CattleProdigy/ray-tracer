@@ -1,5 +1,5 @@
 #include <vector>
-#include <limits>
+#include <cfloat>
 #include <png++/png.hpp>
 
 #include "camera.hpp"
@@ -9,6 +9,8 @@
 #include "shape.hpp"
 
 using V2 = Eigen::Vector2f;
+
+#define EPSILON 0.00001
 
 // Helper
 static void gen_rand_samples(int bins_per_side, std::vector<V2>& points);
@@ -58,6 +60,9 @@ void Ray_Tracer::free_shapes() {
 bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max, 
                         Ray_Hit& rh, bool shadow) const {
     bool hit_once = false;
+    Ray r2 = r;
+    return kd->hit(r2, this, t_min, t_max, rh, shadow);
+/*
     for (Shape* shape : shapes) {
         if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
             t_max = rh.t;            
@@ -66,6 +71,7 @@ bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max,
                 return true;
         }
     }
+*/
     return hit_once;
 }
 
@@ -82,8 +88,7 @@ void Ray_Tracer::trace_all() {
             for (V2& k : points) {
                 Ray r = cam.make_ray((i + k.x() + 0.5)/x_res, (j + k.y() + 0.5)/y_res);
                 Ray_Hit rh;
-                const float BIG_FLOAT = std::numeric_limits<float>::max();
-                if (trace(r, 0.00001f, BIG_FLOAT, rh, false))
+                if (trace(r, EPSILON, FLT_MAX, rh, false))
                     total += rh.col;
             }
             image_buf[i][j] = total / points.size();

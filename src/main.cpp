@@ -45,11 +45,12 @@ int main (int argc, char ** argv) {
     Sphere luminare(.02, V3(0.7,0.9,0), lm, true);
     Sphere luminare2(.02, V3(-0.7,-0.9,0), lm, true);
 
-    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3, 3);
-    rt.add_shape(&s);
-    rt.add_shape(&s2);
+    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 1, 3);
+    //rt.add_shape(&s);
+    //rt.add_shape(&s2);
     rt.add_shape(&m);
     rt.add_shape(&luminare);
+    rt.kd = &kdt;
     // rt.add_shape(&luminare2);
 
     rt.trace_all();

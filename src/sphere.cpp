@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cfloat>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -6,6 +7,8 @@
 #include "ray.hpp"
 #include "ray_tracer.hpp"
 #include "sphere.hpp"
+
+#define EPSILON 0.00001
 
 Sphere::Sphere(float r, const V3& c, const Material& mat, bool is_light) {
     this->r = r;
@@ -97,9 +100,9 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
         V3 int_to_light = int_loc - sph->c; 
         float dist_to_light = int_to_light.norm();
         int_to_light.normalize();
-        Ray shadow_ray(int_loc + 0.1f*int_to_light, int_to_light, ray.depth + 1);
+        Ray shadow_ray(int_loc + EPSILON*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
-        if (rt->trace(shadow_ray, 0.00001f, dist_to_light, shadow_hit, true)) {
+        if (rt->trace(shadow_ray, EPSILON, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
                 continue;
             }
@@ -113,9 +116,9 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
 
     // Reflection 
     V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
-    Ray refl_ray(int_loc + 0.00001f*refl_dir, refl_dir, ray.depth + 1);
+    Ray refl_ray(int_loc + EPSILON*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
-    if (rt->trace(refl_ray, 0.00001f, 99999999999, refl_hit, false)) {
+    if (rt->trace(refl_ray, EPSILON, FLT_MAX, refl_hit, false)) {
         rh.col += mat.refl * refl_hit.col * refl_hit.shape->mat.col;
     }
 

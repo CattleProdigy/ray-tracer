@@ -14,7 +14,7 @@ class Kd_mesh;
 class Bounding_box {
 
     public:
-        Bounding_box () {};
+        Bounding_box ();
         ~Bounding_box () {};
         Bounding_box(const std::vector<Triangle>& tris);
         Bounding_box(const std::vector<Mesh*>& meshes);

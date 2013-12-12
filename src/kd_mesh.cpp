@@ -1,4 +1,5 @@
 #include <vector>
+#include <cfloat>
 
 #include "kd_mesh.hpp"
 #include "mesh.hpp"
