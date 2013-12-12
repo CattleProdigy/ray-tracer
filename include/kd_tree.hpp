@@ -36,11 +36,10 @@ class Kd_tree {
         Kd_tree(char dim);
         void add(Mesh* m);
         void build(); 
-        void build_tree(Kd_tree_node* node, std::vector<Kd_mesh>& meshs);
+        void build_tree(Kd_tree_node* node, std::vector<Kd_mesh>* meshs);
         bool hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow);
         
-
         Kd_tree_node* root;
         std::vector<Mesh *> meshes;
         char dim;

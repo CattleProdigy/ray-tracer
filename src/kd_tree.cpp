@@ -10,6 +10,7 @@
 Kd_tree::Kd_tree(char dim) {
     root = new Kd_tree_node;
     root->split_dim = 0;
+    root->is_leaf = false;
     this->dim = dim;
 }
 
@@ -18,30 +19,29 @@ void Kd_tree::add(Mesh* m) {
 }
 
 void Kd_tree::build() {
-    std::vector<Kd_mesh> kd_meshes;
-    for (Mesh * mesh : meshes) {
-        kd_meshes.push_back(Kd_mesh(*mesh));
+    std::vector<Kd_mesh>* kd_meshes = new std::vector<Kd_mesh>;
+    for (Mesh* mesh : meshes) {
+        kd_meshes->push_back(Kd_mesh(*mesh));
     }
     build_tree(root, kd_meshes); 
 }
 
-void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>& meshes) {
+void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
     std::cout << "Building tree" << std::endl;
     std::cout << "Dim = " << (int)node->split_dim << std::endl;
     int t = 0;
-    for (Kd_mesh& kdm : meshes) {
+    for (Kd_mesh& kdm : *meshes) {
         t += kdm.tris.size();
     }
     std::cout << "Tri count = " << t << std::endl << std::endl;
 
-    node->bbox = Bounding_box(meshes);
+    node->bbox = Bounding_box(*meshes);
     // Stop Criteria
-    //if (t < 200) {
-    if (node->split_dim == 2) {
+    if (t < 300) {
+    //if (node->split_dim == 2) {
         node->is_leaf = true;
-        node->kd_meshes = new std::vector<Kd_mesh>;
-        *node->kd_meshes = meshes;
+        node->kd_meshes = meshes;
         return;
     }
 
@@ -63,17 +63,17 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>& meshes) {
     node->right->bbox.min[node->split_dim] = node->split_dist;
 
     // Partition the meshes onto either side of the splitting plane
-    std::vector<Kd_mesh> right_kd_meshes;
-    for (auto itr = meshes.begin(); itr != meshes.end(); ++itr) {
+    std::vector<Kd_mesh>* right_kd_meshes = new std::vector<Kd_mesh>;
+    for (auto itr = meshes->begin(); itr != meshes->end(); ++itr) {
         // Case 1 - Right side of splitting plane
         if (itr->bbox.min[node->split_dim] > node->split_dist) {
 
             // Move to right
-            right_kd_meshes.push_back(*itr);
+            right_kd_meshes->push_back(*itr);
 
             // Remove from left
-            itr = meshes.erase(itr);
-            if (itr == meshes.end())
+            itr = meshes->erase(itr);
+            if (itr == meshes->end())
                break;
             --itr;
         
@@ -112,7 +112,7 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>& meshes) {
             if (left_changed) {
                 itr->bbox = Bounding_box(itr->tris);
             }
-            right_kd_meshes.push_back(right);
+            right_kd_meshes->push_back(right);
         }
     }
         
@@ -157,8 +157,8 @@ bool Kd_tree_node::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
         for (const Kd_mesh& kd_mesh : *kd_meshes) {
             for (const Triangle& t : kd_mesh.tris) {
                 if (t.hit(ray, rt, t_min, t_max, rh, false)) {
-                    hit = true;
                     t_max = rh.t;
+                    hit = true;
                 }
             }
         }
@@ -215,6 +215,7 @@ bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
     node_stack.push(root);
     t_stack.push(t_min);
     t_stack.push(t_max);
+    bool hit_once = false;
 
     while (!node_stack.empty()) {
         Kd_tree_node* cur_node = node_stack.top();
@@ -226,40 +227,50 @@ bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
 
         // If we hit a leaf just checking the primitives inside
         if (cur_node->is_leaf) {
-            if (cur_node->hit(ray, rt, curr_t_min, curr_t_max, rh, shadow))
-                return true;
+            if (cur_node->hit(ray, rt, curr_t_min, curr_t_max, rh, shadow)){
+                // TODO: Could this cause a problem?
+                curr_t_max = rh.t;
+                hit_once = true;
+            }
         } else {
 
-
-            // Near / Far Classification
             int a = cur_node->split_dim; // This we be used to index various vectors
-            float min_int = ray.o[a] + t_min*ray.s[a];
-            float max_int = ray.o[a] + t_max*ray.s[a];
-            // Case 1: Near
-            if (min_int <= cur_node->split_dist && max_int <= cur_node->split_dist) {
-                node_stack.push(cur_node->left);
-                t_stack.push(curr_t_min);
-                t_stack.push(curr_t_max);
+            float entry = ray.o[a] + curr_t_min*ray.s[a];
+            float exit  = ray.o[a] + curr_t_max*ray.s[a];
+            float s     = cur_node->split_dist;
 
-            // Case 2: far
-            } else if (min_int < cur_node->split_dist && max_int > cur_node->split_dist) {
-                float t = (cur_node->split_dist - ray.o[a]) / ray.s[a];
-                node_stack.push(cur_node->left);
-                t_stack.push(curr_t_min);
-                t_stack.push(t);
-                node_stack.push(cur_node->right);
-                t_stack.push(t);
-                t_stack.push(curr_t_max);
-
-            // Case 3: Near then Far
+            if (entry <= s) {
+                if (exit <= s) {
+                    node_stack.push(cur_node->left);
+                    t_stack.push(curr_t_min);
+                    t_stack.push(curr_t_max);
+                } else {
+                    float t = (s - ray.o[a]) / ray.s[a];
+                    node_stack.push(cur_node->left);
+                    t_stack.push(curr_t_min);
+                    t_stack.push(t);
+                    node_stack.push(cur_node->right);
+                    t_stack.push(t);
+                    t_stack.push(curr_t_max);
+                }
             } else {
-                node_stack.push(cur_node->right);
-                t_stack.push(curr_t_min);
-                t_stack.push(curr_t_max);
+                if (exit >= s) {
+                    node_stack.push(cur_node->right);
+                    t_stack.push(curr_t_min);
+                    t_stack.push(curr_t_max);
+                } else {
+                    float t = (s - ray.o[a]) / ray.s[a];
+                    node_stack.push(cur_node->right);
+                    t_stack.push(curr_t_min);
+                    t_stack.push(t);
+                    node_stack.push(cur_node->left);
+                    t_stack.push(t);
+                    t_stack.push(curr_t_max);
+                }
             }
         }
     }
 
-    return false;
+    return hit_once;
 }
 

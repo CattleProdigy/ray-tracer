@@ -30,25 +30,36 @@ int main (int argc, char ** argv) {
 
     std::string filename(argv[1]);
 
-    Mesh m;
-    m.load(filename);
-
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(filename, 
+                                      aiProcess_Triangulate | 
+                                      aiProcessPreset_TargetRealtime_MaxQuality);
     Kd_tree kdt(3);
-    kdt.add(&m);
+    for (int i = 0; i < scene->mNumMeshes; ++i) {
+        Mesh * m = new Mesh;
+        m->from_aiMesh(scene->mMeshes[i]);
+
+        kdt.add(m);
+    }
     kdt.build();
 
     Material sm(Color(0.4, 0.4, 0.7),0.4, 1.0);
     Material lm(Color(0.6, 0.6, 0.6),1.0, 0.0);
-    Camera cam(V3(0,2,2), V3(0,-1,-1).normalized(), V3(0,1,0), 2.0, -2, -2, 2, 2); 
+    V3 objcen(17.6117, 28.4714,-19.5600);
+    //V3 objcen(0,0,0);
+    //V3 pos(-72, -60, 70);
+    V3 pos(0,0,0);
+    //V3 pos(0,2,2);
+    Camera cam(pos, (objcen - pos).normalized(), V3(0,1,0), 1, -2, -2, 2, 2); 
     Sphere s(0.7, V3(0,0,0), sm, false);
     Sphere s2(0.3, V3(-.6,.8,0), sm, false);
     Sphere luminare(.02, V3(0.7,0.9,0), lm, true);
     Sphere luminare2(.02, V3(-0.7,-0.9,0), lm, true);
 
-    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 1, 3);
+    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3, 3);
     //rt.add_shape(&s);
     //rt.add_shape(&s2);
-    rt.add_shape(&m);
+    //rt.add_shape(&m);
     rt.add_shape(&luminare);
     rt.kd = &kdt;
     // rt.add_shape(&luminare2);

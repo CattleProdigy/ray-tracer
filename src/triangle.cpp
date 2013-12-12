@@ -10,7 +10,7 @@
 #include "triangle.hpp"
 #include "sphere.hpp"
 
-#define EPSILON 0.00001
+#define EPSILON 0.0001
 
 Triangle::Triangle(const Triangle& other) {
     //inds = other.inds;
@@ -80,10 +80,9 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
     }
 
     rh.t = t_inter;
-    rh.col = 0.3*m->mat.col;
+    rh.col = 0.2*m->mat.col;
     rh.normal = normal;
     rh.shape = m;
-
 
     if (shadow || ray.depth >= rt->depth_limit)
         return true;
