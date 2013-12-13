@@ -10,6 +10,9 @@
 #include "kd_tree.hpp"
 #include "ray.hpp"
 #include "shape.hpp"
+#include "sphere.hpp"
+
+using Int_pair = std::pair<unsigned int, unsigned int>;
 
 class Ray_Tracer {
 
@@ -23,6 +26,7 @@ class Ray_Tracer {
 
 
         void add_shape(Shape* shape);
+        void add_light(Sphere* sphere);
         void free_shapes();
         bool trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
         void trace_all();
@@ -33,7 +37,10 @@ class Ray_Tracer {
         Color background_col;
         unsigned int sample_bins;
         unsigned short depth_limit;
-        std::stack<Ray> rays;
+        std::stack<Ray> local_rays;
+        std::stack<Ray> foreign_rays;
+        std::stack<unsigned int> dest_tags;
+        std::stack<Int_pair > local_dest;
         std::vector<Shape *> shapes;
         std::vector<Shape *> lights;
         std::vector<std::vector<Color> > image_buf;

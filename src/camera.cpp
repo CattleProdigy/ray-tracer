@@ -34,7 +34,6 @@ Camera::Camera(V3 eye, V3 gaze, V3 up, float s, float u0, float v0, float u1, fl
     u = up.cross(w);
     u.normalize();
     v = w.cross(u);
-    v.normalize();
     
     vp_up = (u1 - u0) * u;
     vp_across = (v1 - v0) * v;

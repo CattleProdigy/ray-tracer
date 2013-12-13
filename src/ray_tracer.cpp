@@ -7,6 +7,7 @@
 #include "ray.hpp"
 #include "ray_tracer.hpp"
 #include "shape.hpp"
+#include "sphere.hpp"
 
 using V2 = Eigen::Vector2f;
 
@@ -21,8 +22,9 @@ Ray_Tracer::Ray_Tracer(const Camera& cam, unsigned int x_res, unsigned int y_res
     this->x_res = x_res;
     this->y_res = y_res;
     image_buf.resize(x_res);
-    for (std::vector<Color>& y_buf: image_buf)
-        y_buf.resize(y_res);
+    for (std::vector<Color>& y_buf: image_buf) {
+        y_buf.resize(y_res, Color(0,0,0));
+    }
 
     this->background_col = background_col;
     this->sample_bins = sample_bins;
@@ -52,6 +54,12 @@ void Ray_Tracer::add_shape(Shape* shape) {
         lights.push_back(shape);
 }
 
+void Ray_Tracer::add_light(Sphere* sphere) {
+    shapes.push_back(sphere);
+    if (sphere->is_light) 
+        lights.push_back(sphere);
+}
+
 void Ray_Tracer::free_shapes() {
     for (Shape* shape : shapes)
         delete shape;
@@ -79,7 +87,6 @@ void Ray_Tracer::trace_all() {
 
     std::vector<V2> points;
     for (unsigned int i = 0; i < x_res; ++i) {
-        std::cout << i << std::endl;
         for (unsigned int j = 0; j < x_res; ++j) {
             points.clear();
             gen_rand_samples(sample_bins, points);
@@ -87,13 +94,42 @@ void Ray_Tracer::trace_all() {
             Color total;
             for (V2& k : points) {
                 Ray r = cam.make_ray((i + k.x() + 0.5)/x_res, (j + k.y() + 0.5)/y_res);
+                local_rays.push(r);
+                local_dest.push(Int_pair(i, j));
+/*
                 Ray_Hit rh;
                 if (trace(r, EPSILON, FLT_MAX, rh, false))
                     total += rh.col;
+*/
             }
-            image_buf[i][j] = total / points.size();
+//            image_buf[i][j] = total / points.size();
         }
     }
+    
+    Ray r;
+    Ray_Hit rh;
+    Int_pair dest;
+    int samples = sample_bins*sample_bins;
+    omp_set_num_threads(2);
+    #pragma omp parallel 
+    {
+    #pragma omp single private(r, dest, rh)
+    {
+    while (!(local_rays.empty())) {
+            r = local_rays.top();
+            local_rays.pop();
+            dest = local_dest.top();
+            local_dest.pop();
+        #pragma omp task firstprivate(r, dest, rh)
+        {
+        if (trace(r, EPSILON, FLT_MAX, rh, false)) {
+            image_buf[dest.first][dest.second] += rh.col / samples;
+        }
+        }
+    }
+    }
+    }
+    
 }
 
 void Ray_Tracer::write_buffer(std::string filename) {

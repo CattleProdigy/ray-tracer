@@ -38,7 +38,7 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
     node->bbox = Bounding_box(*meshes);
     // Stop Criteria
-    if (t < 300) {
+    if (t < 150) {
     //if (node->split_dim == 2) {
         node->is_leaf = true;
         node->kd_meshes = meshes;
