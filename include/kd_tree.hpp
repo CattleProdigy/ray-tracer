@@ -16,7 +16,6 @@ class Kd_tree_node {
         bool hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow);
 
-
         union {
             struct {
                 Kd_tree_node* left;    
@@ -33,14 +32,22 @@ class Kd_tree_node {
 class Kd_tree {
 
     public:
-        Kd_tree(char dim);
+        Kd_tree(char dim, int np, int rank);
         void add(Mesh* m);
         void build(); 
         void build_tree(Kd_tree_node* node, std::vector<Kd_mesh>* meshs);
         bool hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow);
+        bool hit_local(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
+                    Ray_Hit& rh, bool shadow);
+        bool hit_helper(Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
+                         float t_min, float t_max, Ray_Hit& rh, bool shadow); 
         
         Kd_tree_node* root;
+        Kd_tree_node* local_root;
+        int local_roots;
+        int np;
+        int rank;
         std::vector<Mesh *> meshes;
         char dim;
 };

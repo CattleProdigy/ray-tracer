@@ -45,7 +45,7 @@ int main (int argc, char ** argv) {
     const aiScene *scene = importer.ReadFile(filename, 
                                       aiProcess_Triangulate | 
                                       aiProcessPreset_TargetRealtime_MaxQuality);
-    Kd_tree kdt(3);
+    Kd_tree kdt(3, np, id);
     for (int i = 0; i < scene->mNumMeshes; ++i) {
         Mesh * m = new Mesh;
         m->from_aiMesh(scene->mMeshes[i]);
@@ -72,7 +72,7 @@ int main (int argc, char ** argv) {
     Sphere luminare(.02, V3(0.7,0.9,0), lm, true);
     Sphere luminare2(.02, V3(-0.7,-0.9,0), lm, true);
 
-    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3, 3);
+    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3, 2);
     //rt.add_shape(&s);
     //rt.add_shape(&s2);
     //rt.add_shape(&m);
@@ -80,7 +80,7 @@ int main (int argc, char ** argv) {
     rt.kd = &kdt;
     // rt.add_shape(&luminare2);
 
-    rt.trace_all();
+    rt.trace_all(id);
     rt.write_buffer("ray_image2.png");
     
     #ifdef WITH_MPI

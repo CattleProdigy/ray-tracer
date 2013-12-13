@@ -32,4 +32,12 @@ class Ray {
         unsigned short depth;
 };
 
+struct {
+    Ray r;
+    float t_min;
+    float t_max;
+    bool shadow;
+
+} Ray_Trace;
+
 #endif

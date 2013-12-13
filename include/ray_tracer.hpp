@@ -29,8 +29,9 @@ class Ray_Tracer {
         void add_light(Sphere* sphere);
         void free_shapes();
         bool trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
-        void trace_all();
+        void trace_all(int rank);
         void write_buffer(std::string filename);
+        void process_leaves();
 
         Camera cam;
         unsigned int x_res, y_res;

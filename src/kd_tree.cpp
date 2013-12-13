@@ -7,11 +7,14 @@
 
 #define EPSILON 0.00001
 
-Kd_tree::Kd_tree(char dim) {
+Kd_tree::Kd_tree(char dim, int np, int rank) {
     root = new Kd_tree_node;
     root->split_dim = 0;
     root->is_leaf = false;
+    local_roots = 0;
     this->dim = dim;
+    this->np  = np;
+    this->rank = rank;
 }
 
 void Kd_tree::add(Mesh* m) {
@@ -24,12 +27,22 @@ void Kd_tree::build() {
         kd_meshes->push_back(Kd_mesh(*mesh));
     }
     build_tree(root, kd_meshes); 
+    if (rank != 0) 
+        root = local_root;
 }
 
 void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
+    if (2 << (node->split_dim + 1) == np) {
+        if (local_roots == (rank - 1)) {
+            local_root = node;
+        }
+        ++local_roots;
+    }
+    int split_dim = node->split_dim % dim;
+
     std::cout << "Building tree" << std::endl;
-    std::cout << "Dim = " << (int)node->split_dim << std::endl;
+    std::cout << "Dim = " << (int)split_dim << std::endl;
     int t = 0;
     for (Kd_mesh& kdm : *meshes) {
         t += kdm.tris.size();
@@ -39,7 +52,7 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
     node->bbox = Bounding_box(*meshes);
     // Stop Criteria
     if (t < 150) {
-    //if (node->split_dim == 2) {
+    //if (split_dim == 2) {
         node->is_leaf = true;
         node->kd_meshes = meshes;
         return;
@@ -47,26 +60,26 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
     // Find Split Plane (Median distance (replace with SA heuristic))
     node->split_dist = (0.5) * 
-                   (node->bbox.min[node->split_dim] + node->bbox.max[node->split_dim]);
+                   (node->bbox.min[split_dim] + node->bbox.max[split_dim]);
     std::cout << "Split_dist = " << node->split_dist << std::endl;
 //    std::cin.get();
 
     node->left  = new Kd_tree_node;
-    node->left->split_dim = (node->split_dim + 1) % dim;
+    node->left->split_dim = (split_dim + 1);
     node->left->is_leaf = false;
     node->left->bbox = node->bbox;
-    node->left->bbox.max[node->split_dim] = node->split_dist;
+    node->left->bbox.max[split_dim] = node->split_dist;
     node->right = new Kd_tree_node;
-    node->right->split_dim = (node->split_dim + 1) % dim;
+    node->right->split_dim = (split_dim + 1);
     node->right->is_leaf = false;
     node->right->bbox = node->bbox;
-    node->right->bbox.min[node->split_dim] = node->split_dist;
+    node->right->bbox.min[split_dim] = node->split_dist;
 
     // Partition the meshes onto either side of the splitting plane
     std::vector<Kd_mesh>* right_kd_meshes = new std::vector<Kd_mesh>;
     for (auto itr = meshes->begin(); itr != meshes->end(); ++itr) {
         // Case 1 - Right side of splitting plane
-        if (itr->bbox.min[node->split_dim] > node->split_dist) {
+        if (itr->bbox.min[split_dim] > node->split_dist) {
 
             // Move to right
             right_kd_meshes->push_back(*itr);
@@ -79,8 +92,8 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
         
         
         // Case 2 - Mesh straddles splitting plane
-        } else if (itr->bbox.max[node->split_dim] > node->split_dist && 
-                    itr->bbox.min[node->split_dim] <= node->split_dist){
+        } else if (itr->bbox.max[split_dim] > node->split_dist && 
+                    itr->bbox.min[split_dim] <= node->split_dist){
 
             Kd_mesh right;
             bool left_changed = false;
@@ -88,9 +101,9 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
             for (auto tri = itr->tris.begin(); tri != itr->tris.end(); tri++) {
 
                 // If the triangle is solely to the right of splitting plane
-                if (tri->m->verts[tri->inds[0]][node->split_dim] > node->split_dist && 
-                    tri->m->verts[tri->inds[1]][node->split_dim] > node->split_dist && 
-                    tri->m->verts[tri->inds[2]][node->split_dim] > node->split_dist) {
+                if (tri->m->verts[tri->inds[0]][split_dim] > node->split_dist && 
+                    tri->m->verts[tri->inds[1]][split_dim] > node->split_dist && 
+                    tri->m->verts[tri->inds[2]][split_dim] > node->split_dist) {
 
                     // Move triangle from left to right
                     right.add_tri(*tri);
@@ -101,9 +114,9 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
                     --tri;
                     
                 // If the triangle straddle the splitting plane, duplicate it
-                } else if(!(tri->m->verts[tri->inds[0]][node->split_dim] < node->split_dist
-                    && tri->m->verts[tri->inds[1]][node->split_dim] < node->split_dist  
-                    && tri->m->verts[tri->inds[2]][node->split_dim] < node->split_dist)) {
+                } else if(!(tri->m->verts[tri->inds[0]][split_dim] < node->split_dist
+                    && tri->m->verts[tri->inds[1]][split_dim] < node->split_dist  
+                    && tri->m->verts[tri->inds[2]][split_dim] < node->split_dist)) {
                     right.add_tri(*tri);
                 } 
             }
@@ -166,18 +179,18 @@ bool Kd_tree_node::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
     return hit;
 }
 
-bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
-                    Ray_Hit& rh, bool shadow) {
+bool Kd_tree::hit_helper(Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
+                         float t_min, float t_max, Ray_Hit& rh, bool shadow) {
 
     // Bounding box intersection
     V3 v0;
-    v0[0] = root->bbox.min[0] - EPSILON;
-    v0[1] = root->bbox.min[1] - EPSILON;
-    v0[2] = root->bbox.min[2] - EPSILON;
+    v0[0] = node->bbox.min[0] - EPSILON;
+    v0[1] = node->bbox.min[1] - EPSILON;
+    v0[2] = node->bbox.min[2] - EPSILON;
     V3 v1;
-    v1[0] = root->bbox.max[0] + EPSILON;
-    v1[1] = root->bbox.max[1] + EPSILON;
-    v1[2] = root->bbox.max[2] + EPSILON;
+    v1[0] = node->bbox.max[0] + EPSILON;
+    v1[1] = node->bbox.max[1] + EPSILON;
+    v1[2] = node->bbox.max[2] + EPSILON;
 
     float min = EPSILON;
     float max = FLT_MAX;
@@ -212,7 +225,7 @@ bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
     // Havran's stack-based traversal
     std::stack<Kd_tree_node*> node_stack;
     std::stack<float> t_stack;
-    node_stack.push(root);
+    node_stack.push(node);
     t_stack.push(t_min);
     t_stack.push(t_max);
     bool hit_once = false;
@@ -234,7 +247,7 @@ bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
             }
         } else {
 
-            int a = cur_node->split_dim; // This we be used to index various vectors
+            int a = cur_node->split_dim % dim; // This we be used to index various vectors
             float entry = ray.o[a] + curr_t_min*ray.s[a];
             float exit  = ray.o[a] + curr_t_max*ray.s[a];
             float s     = cur_node->split_dist;
@@ -272,5 +285,17 @@ bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
     }
 
     return hit_once;
+}
+
+bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
+                    Ray_Hit& rh, bool shadow) {
+
+    return hit_helper(root, ray, rt, t_min, t_max, rh, shadow);
+}
+
+bool Kd_tree::hit_local(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
+                    Ray_Hit& rh, bool shadow) {
+
+    return hit_helper(local_root, ray, rt, t_min, t_max, rh, shadow);
 }
 

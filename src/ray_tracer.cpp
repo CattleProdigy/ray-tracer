@@ -1,6 +1,7 @@
 #include <vector>
 #include <cfloat>
 #include <png++/png.hpp>
+#include <mpi.h>
 
 #include "camera.hpp"
 #include "color.hpp"
@@ -83,7 +84,31 @@ bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max,
     return hit_once;
 }
 
-void Ray_Tracer::trace_all() {
+void Ray_Tracer::process_leaves() {
+
+    while (true) {
+        Ray_Trace rt;
+        MPI_Status status;
+        MPI_Recv(&rt, sizeof(Ray_Trace), MPI_BYTE, MPI_ANY_SOURCE,
+                     MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+        
+
+        Ray_Hit rh;
+        if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, rt.shadow))) {
+            rh.t = -FLT_MAX;
+        }
+        
+        MPI_Send(&rh, sizeof(Ray_Hit), MPI_BYTE, status.MPI_SOURCE,
+                    status.MPI_TAG, MPI_COMM_WORLD);
+    }
+}
+
+void Ray_Tracer::trace_all(int rank) {
+
+    if (rank != 0) {
+        process_leaves();
+    }
 
     std::vector<V2> points;
     for (unsigned int i = 0; i < x_res; ++i) {
@@ -105,7 +130,7 @@ void Ray_Tracer::trace_all() {
 //            image_buf[i][j] = total / points.size();
         }
     }
-    
+
     Ray r;
     Ray_Hit rh;
     Int_pair dest;
