@@ -97,11 +97,16 @@ void Ray_Tracer::process_leaves() {
         
 
         Ray_Hit rh;
+        Ray_Hit_Remote rhr;
         if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, rt.shadow))) {
-            rh.t = FLT_MAX;
+            rhr.t = FLT_MAX;
+        } else {
+            rhr.t = rh.t;
         }
+
+        rhr.col = rh.col;
         
-        MPI_Send(&rh, sizeof(Ray_Hit), MPI_BYTE, status.MPI_SOURCE,
+        MPI_Send(&rhr, sizeof(Ray_Hit_Remote), MPI_BYTE, status.MPI_SOURCE,
                     status.MPI_TAG, MPI_COMM_WORLD);
     }
 }

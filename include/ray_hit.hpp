@@ -15,4 +15,9 @@ struct Ray_Hit {
     const Shape* shape;
 };
 
+struct Ray_Hit_Remote {
+    float t;
+    Color col;
+};
+
 #endif

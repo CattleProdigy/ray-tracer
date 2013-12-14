@@ -249,13 +249,16 @@ bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_
             int flag;
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
             if (flag) {
-                Ray_Hit rh_temp;
-                MPI_Recv(&rh_temp, sizeof(Ray_Hit), MPI_BYTE, status.MPI_SOURCE,
+                Ray_Hit_Remote rhr_temp;
+                MPI_Recv(&rhr_temp, sizeof(Ray_Hit_Remote), MPI_BYTE, status.MPI_SOURCE,
                             status.MPI_TAG, MPI_COMM_WORLD, &status);
                 //std::cout<< "Got a response" <<std::endl;
-                if (rh.t > rh_temp.t) {
-                    rh = rh_temp;
+                if (rh.t > rhr_temp.t) {
+                    rh.t = rhr_temp.t;
+                    rh.col = rhr_temp.col;
                     hit_once = true;
+                    if (shadow)
+                        return true;
                 }
                 num_remote--;
             }
@@ -297,6 +300,8 @@ bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_
                 // TODO: Could this cause a problem?
                 curr_t_max = rh.t;
                 hit_once = true;
+                if (shadow)
+                    return true;
             }
         } else {
 
