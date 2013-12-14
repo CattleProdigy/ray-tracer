@@ -16,7 +16,6 @@ Kd_tree::Kd_tree(char dim, int np, int rank) {
     if (np > 1) {
         this->local_root_dim = (int)log2(np - 1);
         std::cout << local_root_dim << std::endl;
-        std::cin.get();
     } else {
         this->local_root_dim = 2;
     }
@@ -188,8 +187,10 @@ bool Kd_tree_node::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
     return hit;
 }
 
+// What a fucking nightmare
 bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
-                         float t_min, float t_max, Ray_Hit& rh, bool shadow) {
+                         float t_min, float t_max, Ray_Hit& rh,
+                         bool shadow, unsigned int ray_id) {
 
     // Bounding box intersection
     V3 v0;
@@ -244,6 +245,7 @@ bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_
     while (!node_stack.empty() || num_remote > 0) {
         //std::cout << "dim: " << cur_node->split_dim << "  lrd: " << local_root_dim <<std::endl;
 
+/*
         if (num_remote > 0) {
             MPI_Status status;
             int flag;
@@ -263,6 +265,7 @@ bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_
                 num_remote--;
             }
         }
+        */
 
         Kd_tree_node* cur_node;
         float curr_t_max;
@@ -286,8 +289,8 @@ bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_
                 ray_trace.r = ray;
                 ray_trace.t_min = curr_t_min;
                 ray_trace.t_max = curr_t_max;
-                ray_trace.shadow = shadow;
-                num_remote++;
+                ray_trace.ray_id = ray_id;
+                //num_remote++;
                 MPI_Bsend(&ray_trace, sizeof(Ray_Trace), MPI_BYTE, 
                             pos + 1, pos, MPI_COMM_WORLD);
                 continue;
@@ -346,14 +349,14 @@ bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_
 }
 
 bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
-                    Ray_Hit& rh, bool shadow) {
+                    Ray_Hit& rh, bool shadow, unsigned int ray_id) {
 
-    return hit_helper(false, root, ray, rt, t_min, t_max, rh, shadow);
+    return hit_helper(false, root, ray, rt, t_min, t_max, rh, shadow, ray_id);
 }
 
 bool Kd_tree::hit_local(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow) {
 
-    return hit_helper(true, local_root, ray, rt, t_min, t_max, rh, shadow);
+    return hit_helper(true, local_root, ray, rt, t_min, t_max, rh, shadow, 0);
 }
 

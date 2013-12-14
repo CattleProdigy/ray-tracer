@@ -2,6 +2,9 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <chrono>
+#include <sstream>
+
 
 #ifdef WITH_MPI
 #include <mpi.h>
@@ -36,9 +39,10 @@ int main (int argc, char ** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &np);
     #endif
 
+    auto t_start = std::chrono::system_clock::now();
+
     std::cout << "np: " << np << std::endl;
     std::cout << "id: " << id << std::endl;
-    std::cin.get();
 
     if (argc < 2)
         return 1;
@@ -86,8 +90,17 @@ int main (int argc, char ** argv) {
 
     rt.trace_all(id,np);
     std::cout << "done" << std::endl;
+
+    std::string out_file = "ray_image-";
+    std::stringstream ss;
+    ss << (np - 1);
+    out_file.append(ss.str());
+    out_file.append(".png");
     if (id == 0) {
-        rt.write_buffer("ray_image2.png");
+        rt.write_buffer(out_file);
+        auto t_end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapse = t_end - t_start;
+        std::cout << "Time: " << elapse.count() << " (s)" << std::endl;
     }
     
     #ifdef WITH_MPI

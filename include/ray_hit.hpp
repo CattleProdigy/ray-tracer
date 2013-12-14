@@ -18,6 +18,7 @@ struct Ray_Hit {
 struct Ray_Hit_Remote {
     float t;
     Color col;
+    unsigned int ray_id;
 };
 
 #endif

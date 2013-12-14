@@ -13,6 +13,7 @@
 using V2 = Eigen::Vector2f;
 
 #define EPSILON 0.00001
+#define NOTHING_TO_SEND 32767
 
 // Helper
 static void gen_rand_samples(int bins_per_side, std::vector<V2>& points);
@@ -46,7 +47,6 @@ Ray_Tracer& Ray_Tracer::operator=(const Ray_Tracer& rt) {
     this->depth_limit = rt.depth_limit;
 
     return *this;
-
 }
 
 void Ray_Tracer::add_shape(Shape* shape) {
@@ -70,22 +70,83 @@ bool Ray_Tracer::trace(const Ray& r, float t_min, float t_max,
                         Ray_Hit& rh, bool shadow) const {
     bool hit_once = false;
     Ray r2 = r;
-    return kd->hit(r2, this, t_min, t_max, rh, shadow);
-/*
-    for (Shape* shape : shapes) {
-        if (shape->hit(r, this, t_min, t_max, rh, shadow)) {
-            t_max = rh.t;            
-            hit_once = true;
-            if (shadow)
-                return true;
-        }
-    }
-*/
+    return kd->hit_local(r2, this, t_min, t_max, rh, shadow);
     return hit_once;
 }
 
-void Ray_Tracer::process_leaves() {
+void Ray_Tracer::worker() {
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::stack<Ray_Trace> rts;
+    std::vector<Ray_Hit_Remote> rhrs;
+    while (true) {
+        MPI_Status status;
+        int flag;
+        MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+        if (flag) {
+            Ray_Trace rt;
+            MPI_Recv(&rt, sizeof(Ray_Trace), MPI_BYTE, MPI_ANY_SOURCE,
+                         MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+            if (rt.t_min == -1 && rt.t_max == -1)
+                break;
+
+            rts.push(rt);
+
+
+        // Removed because interleaving comms and work is slow
+        //    continue;
+        } /*else {
+            if (!rts.empty()) {
+                Ray_Trace rt = rts.top();
+                rts.pop();
+                Ray_Hit rh;
+                Ray_Hit_Remote rhr;
+                if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, false))) {
+                    rhr.t = FLT_MAX;
+                } else {
+                    rhr.t = rh.t;
+                    rhr.col = rh.col;
+                    rhr.ray_id = rt.ray_id;
+                    rhrs.push_back(rhr);
+                }
+            }
+        }
+        */
+    }
+
+    std::cout << "Just processing now" << std::endl;
+    
+    // Process remaining rays
+    while (!rts.empty()) {
+        Ray_Trace rt = rts.top();
+        rts.pop();
+        Ray_Hit rh;
+        Ray_Hit_Remote rhr;
+        if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, false))) {
+            rhr.t = FLT_MAX;
+        } else {
+            rhr.t = rh.t;
+            rhr.col = rh.col;
+            rhr.ray_id = rt.ray_id;
+            rhrs.push_back(rhr);
+        }
+    }
+
+    std::cout << "Done processing, gonna send now" << std::endl;
+
+    if (!rhrs.empty()) {
+        // Send back ray info
+        MPI_Ssend(rhrs.data(), sizeof(rhrs[0]) * rhrs.size(), 
+                    MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+    } else {
+        // Send a message staying we're done, but have nothing to sedn
+        unsigned int done = 0xFFFFFFFF;
+        MPI_Ssend(&done, 1, MPI_INT, 0, NOTHING_TO_SEND, MPI_COMM_WORLD);
+    }
+
+/*
+    MPI_Barrier(MPI_COMM_WORLD);
     while (true) {
         Ray_Trace rt;
         MPI_Status status;
@@ -98,7 +159,7 @@ void Ray_Tracer::process_leaves() {
 
         Ray_Hit rh;
         Ray_Hit_Remote rhr;
-        if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, rt.shadow))) {
+        if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, false))) {
             rhr.t = FLT_MAX;
         } else {
             rhr.t = rh.t;
@@ -109,37 +170,94 @@ void Ray_Tracer::process_leaves() {
         MPI_Send(&rhr, sizeof(Ray_Hit_Remote), MPI_BYTE, status.MPI_SOURCE,
                     status.MPI_TAG, MPI_COMM_WORLD);
     }
+*/
 }
 
 void Ray_Tracer::trace_all(int rank, int np) {
 
     std::cout << "hi" << std::endl;
     if (rank != 0) {
-        process_leaves();
+        worker();
         return;
     }
 
     std::vector<V2> points;
+    MPI_Barrier(MPI_COMM_WORLD);
     for (unsigned int i = 0; i < x_res; ++i) {
         for (unsigned int j = 0; j < x_res; ++j) {
             points.clear();
             gen_rand_samples(sample_bins, points);
 
             Color total;
-            for (V2& k : points) {
-                Ray r = cam.make_ray((i + k.x() + 0.5)/x_res, (j + k.y() + 0.5)/y_res);
+            for (unsigned int k = 0; k < points.size(); ++k) {
+                V2& p = points[k];
+                Ray r = cam.make_ray((i + p.x() + 0.5)/x_res, (j + p.y() + 0.5)/y_res);
                 local_rays.push(r);
                 local_dest.push(Int_pair(i, j));
-/*
                 Ray_Hit rh;
-                if (trace(r, EPSILON, FLT_MAX, rh, false))
-                    total += rh.col;
-*/
+                unsigned int ray_id = i << 19 | j << 6 | k;
+                kd->hit(r, this, EPSILON, FLT_MAX, rh, false, ray_id);
+                //trace(r, EPSILON, FLT_MAX, rh, false);
+                    //total += rh.col;
             }
 //            image_buf[i][j] = total / points.size();
         }
     }
 
+    // Tell all workers to start processing
+    Ray_Trace rt;
+    Ray r;
+    rt.r = r; // dummy
+    rt.t_min = -1;
+    rt.t_max = -1;
+    rt.ray_id = 0; // dummy
+    std::cout << "Done sending Rays" << std::endl;
+    for (int i = 1; i < np; ++i) {
+        MPI_Ssend(&rt, sizeof(Ray_Trace), MPI_BYTE, i, 0, MPI_COMM_WORLD);
+    }
+
+    std::map<unsigned int, Ray_Hit_Remote> rhrs;
+
+    int procs_to_recv = np - 1;
+    while (procs_to_recv > 0) {
+        MPI_Status status;
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        if (status.MPI_TAG == NOTHING_TO_SEND) {
+            int dummy;
+            MPI_Recv(&dummy, 1, MPI_INT, MPI_ANY_SOURCE, 
+                        MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+            procs_to_recv--;
+            continue;
+        } else {
+            int byte_count;
+            MPI_Get_count(&status, MPI_BYTE, &byte_count);
+            int elements = byte_count / sizeof(Ray_Hit_Remote);
+            Ray_Hit_Remote* rhr = new Ray_Hit_Remote[elements]; 
+            MPI_Recv(rhr, byte_count, MPI_BYTE, status.MPI_SOURCE, 
+                        status.MPI_TAG, MPI_COMM_WORLD, &status);
+
+            for (int i = 0; i < elements; ++i) {
+                std::pair<unsigned int, Ray_Hit_Remote> p;
+                p.first = rhr[i].ray_id;
+                p.second = rhr[i];
+                auto res = rhrs.insert(p); 
+                if (!res.second) { // already exists
+                    if (res.first->second.t > rhr[i].t)
+                        res.first->second = rhr[i];
+                }
+            }
+            procs_to_recv--;
+        }
+    }
+
+    int samples = points.size();
+    for (auto& r : rhrs) {
+        int x = r.first >> 19;
+        int y = (r.first >> 6) & 0x00001FFF;
+        image_buf[x][y] += r.second.col/ samples;
+    }
+
+    /*
     Ray r;
     Ray_Hit rh;
     Int_pair dest;
@@ -164,17 +282,8 @@ void Ray_Tracer::trace_all(int rank, int np) {
     }
     }
     }
+    */
 
-    // Tell all workers to shutdown
-    Ray_Trace rt;
-    rt.r = r; // dummy
-    rt.t_min = -1;
-    rt.t_max = -1;
-    rt.shadow = false; // dummy 
-    std::cout << "shutdownhi" << std::endl;
-    for (int i = 1; i < np; ++i) {
-        MPI_Send(&rt, sizeof(Ray_Trace), MPI_BYTE,i, 0, MPI_COMM_WORLD);
-    }
     return;
 
 }

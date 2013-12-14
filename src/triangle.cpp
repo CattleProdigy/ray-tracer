@@ -107,7 +107,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         Ray shadow_ray(int_loc + EPSILON*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
         if (rt->kd->hit_helper(true, rt->kd->root, shadow_ray, rt,
-                EPSILON, dist_to_light, shadow_hit, true)) {
+                EPSILON, dist_to_light, shadow_hit, true, 0)) {
             if (!shadow_hit.shape->is_light) {
                 continue;
             }
@@ -124,7 +124,7 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
     Ray refl_ray(int_loc + EPSILON*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
     if (rt->kd->hit_helper(true, rt->kd->root, refl_ray, rt,
-            EPSILON, FLT_MAX, refl_hit, false)) {
+            EPSILON, FLT_MAX, refl_hit, false, 0)) {
     //if (rt->trace(refl_ray, EPSILON, FLT_MAX, refl_hit, false)) {
         rh.col += m->mat.refl*refl_hit.col * refl_hit.shape->mat.col;
     }

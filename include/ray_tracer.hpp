@@ -31,7 +31,7 @@ class Ray_Tracer {
         bool trace(const Ray& r, float t_min, float t_max, Ray_Hit& rh, bool shadow) const;
         void trace_all(int rank, int np);
         void write_buffer(std::string filename);
-        void process_leaves();
+        void worker();
 
         Camera cam;
         unsigned int x_res, y_res;

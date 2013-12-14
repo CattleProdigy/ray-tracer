@@ -37,11 +37,12 @@ class Kd_tree {
         void build(); 
         void build_tree(Kd_tree_node* node, std::vector<Kd_mesh>* meshs);
         bool hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
-                    Ray_Hit& rh, bool shadow);
+                    Ray_Hit& rh, bool shadow, unsigned int ray_id);
         bool hit_local(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow);
         bool hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
-                         float t_min, float t_max, Ray_Hit& rh, bool shadow); 
+                         float t_min, float t_max, Ray_Hit& rh, 
+                         bool shadow, unsigned int ray_id); 
         
         Kd_tree_node* root;
         Kd_tree_node* local_root;

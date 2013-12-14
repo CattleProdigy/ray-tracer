@@ -36,8 +36,7 @@ struct Ray_Trace {
     Ray r;
     float t_min;
     float t_max;
-    bool shadow;
-
+    unsigned int ray_id;
 };
 
 #endif
