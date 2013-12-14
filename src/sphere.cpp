@@ -84,8 +84,8 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
 
     rh.t = t;
     rh.col = 0.1*mat.col;
-    rh.normal = c - ray.at(t);
-    rh.normal.normalize();
+    V3 normal = c - ray.at(t);
+    normal.normalize();
 
     // Store location of ray-sphere intersection
     V3 int_loc = ray.at(t); 
@@ -108,14 +108,14 @@ bool Sphere::hit(Ray ray, const Ray_Tracer* rt,
             }
         }
 
-        float inner = int_to_light.dot(rh.normal);
+        float inner = int_to_light.dot(normal);
         if (inner > 0.0) {
             rh.col += sph->mat.col * inner * mat.diff * mat.col;
         }
     }
 
     // Reflection 
-    V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
+    V3 refl_dir = ray.s - 2.0f * (normal.dot(ray.s)) * normal;
     Ray refl_ray(int_loc + EPSILON*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
     if (rt->trace(refl_ray, EPSILON, FLT_MAX, refl_hit, false)) {

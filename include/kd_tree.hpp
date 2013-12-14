@@ -25,7 +25,7 @@ class Kd_tree_node {
         };
         Bounding_box bbox;
         bool is_leaf;
-        char split_dim;
+        unsigned char split_dim;
         float split_dist;  // Distance of the spliting plane from the axis (whichever one)
 };
 
@@ -40,16 +40,17 @@ class Kd_tree {
                     Ray_Hit& rh, bool shadow);
         bool hit_local(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow);
-        bool hit_helper(Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
+        bool hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
                          float t_min, float t_max, Ray_Hit& rh, bool shadow); 
         
         Kd_tree_node* root;
         Kd_tree_node* local_root;
-        int local_roots;
+        std::vector<Kd_tree_node*> local_roots;
+        int local_root_dim;
         int np;
         int rank;
         std::vector<Mesh *> meshes;
-        char dim;
+        unsigned char dim;
 };
 
 #endif

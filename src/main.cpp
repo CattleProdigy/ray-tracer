@@ -36,6 +36,10 @@ int main (int argc, char ** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &np);
     #endif
 
+    std::cout << "np: " << np << std::endl;
+    std::cout << "id: " << id << std::endl;
+    std::cin.get();
+
     if (argc < 2)
         return 1;
 
@@ -80,8 +84,11 @@ int main (int argc, char ** argv) {
     rt.kd = &kdt;
     // rt.add_shape(&luminare2);
 
-    rt.trace_all(id);
-    rt.write_buffer("ray_image2.png");
+    rt.trace_all(id,np);
+    std::cout << "done" << std::endl;
+    if (id == 0) {
+        rt.write_buffer("ray_image2.png");
+    }
     
     #ifdef WITH_MPI
     MPI_Finalize();

@@ -17,8 +17,8 @@ Triangle::Triangle(const Triangle& other) {
     this->inds[0] = other.inds[0];
     this->inds[1] = other.inds[1];
     this->inds[2] = other.inds[2];
+    this->normal  = other.normal;
     this->m = other.m;
-    normal = other.normal;
 }
 
 /*
@@ -32,8 +32,8 @@ Triangle& Triangle::operator=(const Triangle& other) {
     this->inds[0] = other.inds[0];
     this->inds[1] = other.inds[1];
     this->inds[2] = other.inds[2];
-    this->normal = other.normal;
     this->m = other.m;
+    this->normal  = other.normal;
     return (*this);
 }
 
@@ -81,7 +81,6 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
 
     rh.t = t_inter;
     rh.col = 0.2*m->mat.col;
-    rh.normal = normal;
     rh.shape = m;
 
     if (shadow || ray.depth >= rt->depth_limit)
@@ -107,23 +106,26 @@ bool Triangle::hit(const Ray& ray, const Ray_Tracer* rt,
         int_to_light.normalize();
         Ray shadow_ray(int_loc + EPSILON*int_to_light, int_to_light, ray.depth + 1);
         Ray_Hit shadow_hit;
-        if (rt->trace(shadow_ray, EPSILON, dist_to_light, shadow_hit, true)) {
+        if (rt->kd->hit_helper(true, rt->kd->root, shadow_ray, rt,
+                EPSILON, dist_to_light, shadow_hit, true)) {
             if (!shadow_hit.shape->is_light) {
                 continue;
             }
         }
 
-        float inner = int_to_light.dot(rh.normal);
+        float inner = int_to_light.dot(normal);
         if (inner > 0.0) {
             rh.col += sph->mat.col *inner* m->mat.diff * m->mat.col;
         }
     }
 
     // Reflection 
-    V3 refl_dir = ray.s - 2.0f * (rh.normal.dot(ray.s)) * rh.normal;
+    V3 refl_dir = ray.s - 2.0f * (normal.dot(ray.s)) * normal;
     Ray refl_ray(int_loc + EPSILON*refl_dir, refl_dir, ray.depth + 1);
     Ray_Hit refl_hit;
-    if (rt->trace(refl_ray, EPSILON, FLT_MAX, refl_hit, false)) {
+    if (rt->kd->hit_helper(true, rt->kd->root, refl_ray, rt,
+            EPSILON, FLT_MAX, refl_hit, false)) {
+    //if (rt->trace(refl_ray, EPSILON, FLT_MAX, refl_hit, false)) {
         rh.col += m->mat.refl*refl_hit.col * refl_hit.shape->mat.col;
     }
 

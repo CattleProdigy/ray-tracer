@@ -1,6 +1,8 @@
 #include <cfloat>
 #include <stack>
 
+#include "mpi.h"
+
 #include "kd_tree.hpp"
 #include "kd_mesh.hpp"
 #include "mesh.hpp"
@@ -11,7 +13,14 @@ Kd_tree::Kd_tree(char dim, int np, int rank) {
     root = new Kd_tree_node;
     root->split_dim = 0;
     root->is_leaf = false;
-    local_roots = 0;
+    if (np > 1) {
+        this->local_root_dim = (int)log2(np - 1);
+        std::cout << local_root_dim << std::endl;
+        std::cin.get();
+    } else {
+        this->local_root_dim = 2;
+    }
+            
     this->dim = dim;
     this->np  = np;
     this->rank = rank;
@@ -27,17 +36,17 @@ void Kd_tree::build() {
         kd_meshes->push_back(Kd_mesh(*mesh));
     }
     build_tree(root, kd_meshes); 
-    if (rank != 0) 
-        root = local_root;
+    if (rank == 0)
+        local_root = root;
 }
 
 void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
-    if (2 << (node->split_dim + 1) == np) {
-        if (local_roots == (rank - 1)) {
+    if (node->split_dim == local_root_dim) {
+        if (local_roots.size() == (rank - 1)) {
             local_root = node;
         }
-        ++local_roots;
+        local_roots.push_back(node);
     }
     int split_dim = node->split_dim % dim;
 
@@ -51,7 +60,7 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
     node->bbox = Bounding_box(*meshes);
     // Stop Criteria
-    if (t < 150) {
+    if (t < 150 || node->split_dim == 255) {
     //if (split_dim == 2) {
         node->is_leaf = true;
         node->kd_meshes = meshes;
@@ -65,12 +74,12 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 //    std::cin.get();
 
     node->left  = new Kd_tree_node;
-    node->left->split_dim = (split_dim + 1);
+    node->left->split_dim = (node->split_dim + 1);
     node->left->is_leaf = false;
     node->left->bbox = node->bbox;
     node->left->bbox.max[split_dim] = node->split_dist;
     node->right = new Kd_tree_node;
-    node->right->split_dim = (split_dim + 1);
+    node->right->split_dim = (node->split_dim + 1);
     node->right->is_leaf = false;
     node->right->bbox = node->bbox;
     node->right->bbox.min[split_dim] = node->split_dist;
@@ -179,7 +188,7 @@ bool Kd_tree_node::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
     return hit;
 }
 
-bool Kd_tree::hit_helper(Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
+bool Kd_tree::hit_helper(bool is_local, Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
                          float t_min, float t_max, Ray_Hit& rh, bool shadow) {
 
     // Bounding box intersection
@@ -223,20 +232,64 @@ bool Kd_tree::hit_helper(Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
     }
 
     // Havran's stack-based traversal
+    int num_remote = 0;
     std::stack<Kd_tree_node*> node_stack;
     std::stack<float> t_stack;
     node_stack.push(node);
     t_stack.push(t_min);
     t_stack.push(t_max);
     bool hit_once = false;
+    rh.t = FLT_MAX;
 
-    while (!node_stack.empty()) {
-        Kd_tree_node* cur_node = node_stack.top();
-        node_stack.pop();
-        float curr_t_max = t_stack.top();
-        t_stack.pop();
-        float curr_t_min = t_stack.top();
-        t_stack.pop();
+    while (!node_stack.empty() || num_remote > 0) {
+        //std::cout << "dim: " << cur_node->split_dim << "  lrd: " << local_root_dim <<std::endl;
+
+        if (num_remote > 0) {
+            MPI_Status status;
+            int flag;
+            MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
+            if (flag) {
+                Ray_Hit rh_temp;
+                MPI_Recv(&rh_temp, sizeof(Ray_Hit), MPI_BYTE, status.MPI_SOURCE,
+                            status.MPI_TAG, MPI_COMM_WORLD, &status);
+                //std::cout<< "Got a response" <<std::endl;
+                if (rh.t > rh_temp.t) {
+                    rh = rh_temp;
+                    hit_once = true;
+                }
+                num_remote--;
+            }
+        }
+
+        Kd_tree_node* cur_node;
+        float curr_t_max;
+        float curr_t_min;
+        if (!node_stack.empty()) {
+            cur_node = node_stack.top();
+            node_stack.pop();
+            curr_t_max = t_stack.top();
+            t_stack.pop();
+            curr_t_min = t_stack.top();
+            t_stack.pop();
+        } else {
+            continue;
+        }
+         
+        if (!is_local) {
+            if (cur_node->split_dim == local_root_dim) {
+                int pos = find(local_roots.begin(), local_roots.end(), cur_node) 
+                                - local_roots.begin();
+                Ray_Trace ray_trace;
+                ray_trace.r = ray;
+                ray_trace.t_min = curr_t_min;
+                ray_trace.t_max = curr_t_max;
+                ray_trace.shadow = shadow;
+                num_remote++;
+                MPI_Bsend(&ray_trace, sizeof(Ray_Trace), MPI_BYTE, 
+                            pos + 1, pos, MPI_COMM_WORLD);
+                continue;
+            }
+        }
 
         // If we hit a leaf just checking the primitives inside
         if (cur_node->is_leaf) {
@@ -290,12 +343,12 @@ bool Kd_tree::hit_helper(Kd_tree_node* node, Ray& ray, const Ray_Tracer* rt,
 bool Kd_tree::hit(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow) {
 
-    return hit_helper(root, ray, rt, t_min, t_max, rh, shadow);
+    return hit_helper(false, root, ray, rt, t_min, t_max, rh, shadow);
 }
 
 bool Kd_tree::hit_local(Ray& ray, const Ray_Tracer* rt, float t_min, float t_max,
                     Ray_Hit& rh, bool shadow) {
 
-    return hit_helper(local_root, ray, rt, t_min, t_max, rh, shadow);
+    return hit_helper(true, local_root, ray, rt, t_min, t_max, rh, shadow);
 }
 

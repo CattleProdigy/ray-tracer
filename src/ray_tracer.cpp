@@ -92,11 +92,13 @@ void Ray_Tracer::process_leaves() {
         MPI_Recv(&rt, sizeof(Ray_Trace), MPI_BYTE, MPI_ANY_SOURCE,
                      MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
+        if (rt.t_min == -1 && rt.t_max == -1)
+            break;
         
 
         Ray_Hit rh;
         if (!(kd->hit_local(rt.r, this, rt.t_min, rt.t_max, rh, rt.shadow))) {
-            rh.t = -FLT_MAX;
+            rh.t = FLT_MAX;
         }
         
         MPI_Send(&rh, sizeof(Ray_Hit), MPI_BYTE, status.MPI_SOURCE,
@@ -104,10 +106,12 @@ void Ray_Tracer::process_leaves() {
     }
 }
 
-void Ray_Tracer::trace_all(int rank) {
+void Ray_Tracer::trace_all(int rank, int np) {
 
+    std::cout << "hi" << std::endl;
     if (rank != 0) {
         process_leaves();
+        return;
     }
 
     std::vector<V2> points;
@@ -135,11 +139,12 @@ void Ray_Tracer::trace_all(int rank) {
     Ray_Hit rh;
     Int_pair dest;
     int samples = sample_bins*sample_bins;
-    omp_set_num_threads(2);
+    omp_set_num_threads(1);
     #pragma omp parallel 
     {
     #pragma omp single private(r, dest, rh)
     {
+    std::cout << "hi" << std::endl;
     while (!(local_rays.empty())) {
             r = local_rays.top();
             local_rays.pop();
@@ -154,7 +159,19 @@ void Ray_Tracer::trace_all(int rank) {
     }
     }
     }
-    
+
+    // Tell all workers to shutdown
+    Ray_Trace rt;
+    rt.r = r; // dummy
+    rt.t_min = -1;
+    rt.t_max = -1;
+    rt.shadow = false; // dummy 
+    std::cout << "shutdownhi" << std::endl;
+    for (int i = 1; i < np; ++i) {
+        MPI_Send(&rt, sizeof(Ray_Trace), MPI_BYTE,i, 0, MPI_COMM_WORLD);
+    }
+    return;
+
 }
 
 void Ray_Tracer::write_buffer(std::string filename) {

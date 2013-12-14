@@ -61,6 +61,7 @@ mpi: ray
 
 mpi_debug: CXXFLAGS:=$(filter-out -O3,$(CXXFLAGS))
 mpi_debug: CXXFLAGS += -g 
+mpi_debug: CXXFLAGS += -O1 
 mpi_debug: mpi
 
 debug: CXXFLAGS:=$(filter-out -O3,$(CXXFLAGS))

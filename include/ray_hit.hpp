@@ -11,7 +11,6 @@ class Shape;
 
 struct Ray_Hit {
     float t;
-    V3 normal;
     Color col;
     const Shape* shape;
 };
