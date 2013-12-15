@@ -184,7 +184,7 @@ void Ray_Tracer::trace_all(int rank, int np) {
     std::vector<V2> points;
     MPI_Barrier(MPI_COMM_WORLD);
     for (unsigned int i = 0; i < x_res; ++i) {
-        for (unsigned int j = 0; j < x_res; ++j) {
+        for (unsigned int j = 0; j < y_res; ++j) {
             points.clear();
             gen_rand_samples(sample_bins, points);
 
