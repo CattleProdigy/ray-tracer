@@ -39,6 +39,7 @@ void Kd_tree::build() {
         local_root = root;
 }
 
+#define DEBUG
 void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
 
     if (node->split_dim == local_root_dim) {
@@ -49,17 +50,23 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
     }
     int split_dim = node->split_dim % dim;
 
+    #ifdef DEBUG 
     std::cout << "Building tree" << std::endl;
     std::cout << "Dim = " << (int)split_dim << std::endl;
+    #endif
+    
     int t = 0;
     for (Kd_mesh& kdm : *meshes) {
         t += kdm.tris.size();
     }
+
+    #ifdef DEBUG 
     std::cout << "Tri count = " << t << std::endl << std::endl;
+    #endif
 
     node->bbox = Bounding_box(*meshes);
     // Stop Criteria
-    if (t < 150 || node->split_dim == 255) {
+    if (t < 350 || node->split_dim == 50) {
     //if (split_dim == 2) {
         node->is_leaf = true;
         node->kd_meshes = meshes;
@@ -69,8 +76,9 @@ void Kd_tree::build_tree(Kd_tree_node * node, std::vector<Kd_mesh>* meshes) {
     // Find Split Plane (Median distance (replace with SA heuristic))
     node->split_dist = (0.5) * 
                    (node->bbox.min[split_dim] + node->bbox.max[split_dim]);
+    #ifdef DEBUG 
     std::cout << "Split_dist = " << node->split_dist << std::endl;
-//    std::cin.get();
+    #endif
 
     node->left  = new Kd_tree_node;
     node->left->split_dim = (node->split_dim + 1);
