@@ -65,22 +65,26 @@ int main (int argc, char ** argv) {
     Material sm(Color(0.4, 0.4, 0.7),0.4, 1.0);
     Material lm(Color(0.6, 0.6, 0.6),1.0, 0.0);
 
-    V3 pos(-62, -60, 70);
-    V3 objcen(16.6117, 28.4714,-19.5600);
+    // Robot
+    //V3 pos(-62, -60, 70);
+    //V3 objcen(16.6117, 28.4714,-19.5600);
+    //Camera cam(pos, (objcen - pos).normalized(), V3(1,0,0), 1, -30, -30, 30, 30); 
 
     // Dragon
-    //V3 objcen(0, 5, 0);
-    //V3 pos(1.6, 4.7, 26.2);
+    V3 objcen(-0.5, 4, 0);
+    V3 pos(-7, 5, 15);
+
     //V3 objcen(0,0,0);
     //V3 pos(0,0,6);
     //V3 pos(0,2,2);
-    Camera cam(pos, (objcen - pos).normalized(), V3(1,0,0), 1, -30, -30, 30, 30); 
+    int e = 14;
+    Camera cam(pos, (objcen - pos).normalized(), V3(0,-1,0).normalized(), 30, -e, -e, e, e); 
     Sphere s(0.7, V3(0,0,0), sm, false);
     Sphere s2(0.3, V3(-.6,.8,0), sm, false);
-    Sphere luminare(.02, V3(0.7,0.9,0), lm, true);
+    Sphere luminare(.02, V3(-3,7,13), lm, true);
     Sphere luminare2(.02, V3(-0.7,-0.9,0), lm, true);
 
-    Ray_Tracer rt(cam, 501, 501, Color(0.1, 0.1, 0.1), 3, 2);
+    Ray_Tracer rt(cam, 301, 301, Color(0.1, 0.1, 0.1), 1, 2);
     //rt.add_shape(&s);
     //rt.add_shape(&s2);
     //rt.add_shape(&m);

@@ -1,5 +1,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <iostream>
+#include <cstdio>
 
 #include "camera.hpp"
 
@@ -34,10 +36,10 @@ Camera::Camera(V3 eye, V3 gaze, V3 up, float s, float u0, float v0, float u1, fl
     u = up.cross(w);
     u.normalize();
     v = w.cross(u);
-    
-    vp_up = (u1 - u0) * u;
-    vp_across = (v1 - v0) * v;
-    vp_corner = u0*u + v0*v - s*w;
+   
+    vp_across = (u1 - u0) * u;
+    vp_up = (v1 - v0) * v;
+    vp_corner = eye + u0*u + v0*v - s*w;
 }
 
 Ray Camera::make_ray(float a, float b) {
