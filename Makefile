@@ -9,7 +9,7 @@ LIB_DIR		= ./lib
 
 # Build Objects
 SRCS		= $(wildcard $(SRC_DIR)/*.cpp)
-INCLUDES 	= -I./include -I./ext_include  -I./ext_include/eigen3 -I./gtest/include -I./ext_include/assimp
+INCLUDES	= -I./include -I/usr/include/eigen3 -I./gtest/include -I/usr/include/assimp
 TESTS 		= $(wildcard $(TEST_DIR)/*.cpp)
 
 OBJS		= $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
@@ -20,7 +20,7 @@ TEST_OBJS	= $(TESTS:$(TEST_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 # Compiler
 CXX 		= g++
 CPPFLAGS	= -isystem $(GTEST_DIR)/include
-CXXFLAGS 	= -DWITH_MPI -fopenmp --std=c++11 -O3 -march=core2 -Wextra -Wall -pthread $(INCLUDES) $(LIBFLAGS) `libpng-config --cflags`
+CXXFLAGS 	=  -fopenmp --std=c++11 -O3 -march=core2 -Wextra -Wall -pthread $(INCLUDES) $(LIBFLAGS) `libpng-config --cflags`
 LIBFLAGS 	= -lassimp `libpng-config --ldflags`
 
 # Google Test
@@ -28,7 +28,7 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 
-.PHONY: clean all debug mpi
+.PHONY: clean all debug
 
 all: $(OBJS)
 
@@ -56,18 +56,9 @@ image_test: $(OBJS)
 ray: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o ray 
 
-mpi: CXX:=mpic++
-mpi: ray 
-
-mpi_debug: CXXFLAGS:=$(filter-out -O3,$(CXXFLAGS))
-mpi_debug: CXXFLAGS += -g 
-mpi_debug: CXXFLAGS += -O1 
-mpi_debug: mpi
-
 debug: CXXFLAGS:=$(filter-out -O3,$(CXXFLAGS))
 debug: CXXFLAGS += -g 
 debug: ray
-
 
 $(TEST_OBJS): $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp \
 				$(GTEST_HEADERS)

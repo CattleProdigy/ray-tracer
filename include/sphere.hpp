@@ -15,7 +15,7 @@ class Ray_Tracer;
 
 using V3 = Eigen::Vector3f;
 
-class Sphere : public Shape {
+class Sphere : public Primitive {
 
     public:
         Sphere() {}; 

@@ -61,6 +61,7 @@ int main (int argc, char ** argv) {
         kdt.add(m);
     }
     kdt.build();
+    std::cout << "KD_TREE DONE" << std::endl;
 
     Material sm(Color(0.4, 0.4, 0.7),0.4, 1.0);
     Material lm(Color(0.6, 0.6, 0.6),1.0, 0.0);
@@ -73,18 +74,23 @@ int main (int argc, char ** argv) {
     // Dragon
     V3 objcen(-0.5, 4, 0);
     V3 pos(-7, 5, 15);
+    int e = 14;
+
+    // High Res Dragon
+    //V3 objcen(-0.0058, 0.12495, -0.004603);
+    //V3 pos(-0.01, 0.15, 0.2);
+    //int e = 5;
 
     //V3 objcen(0,0,0);
     //V3 pos(0,0,6);
     //V3 pos(0,2,2);
-    int e = 14;
     Camera cam(pos, (objcen - pos).normalized(), V3(0,-1,0).normalized(), 30, -e, -e, e, e); 
     Sphere s(0.7, V3(0,0,0), sm, false);
     Sphere s2(0.3, V3(-.6,.8,0), sm, false);
     Sphere luminare(.02, V3(-3,7,13), lm, true);
     Sphere luminare2(.02, V3(-0.7,-0.9,0), lm, true);
 
-    Ray_Tracer rt(cam, 301, 301, Color(0.1, 0.1, 0.1), 1, 2);
+    Ray_Tracer rt(cam, 51, 51, Color(0.1, 0.1, 0.1), 1, 1);
     //rt.add_shape(&s);
     //rt.add_shape(&s2);
     //rt.add_shape(&m);
